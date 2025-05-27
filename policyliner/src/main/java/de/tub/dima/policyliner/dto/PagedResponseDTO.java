@@ -1,0 +1,59 @@
+package de.tub.dima.policyliner.dto;
+
+import java.util.List;
+
+public class PagedResponseDTO<T> {
+    private List<T> elements;
+    private Integer totalElements;
+    private Integer totalPages;
+    private Integer currentPage;
+    private Integer pageSize;
+
+    public PagedResponseDTO(List<T> elements, Integer totalElements, Integer totalPages, Integer currentPage, Integer pageSize) {
+        this.elements = elements;
+        this.totalElements = totalElements;
+        this.totalPages = totalPages;
+        this.currentPage = currentPage;
+        this.pageSize = pageSize;
+    }
+
+    public List<T> getElements() {
+        return elements;
+    }
+
+    public void setElements(List<T> elements) {
+        this.elements = elements;
+    }
+
+    public Integer getTotalElements() {
+        return totalElements;
+    }
+
+    public void setTotalElements(Integer totalElements) {
+        this.totalElements = totalElements;
+    }
+
+    public Integer getTotalPages() {
+        return totalPages;
+    }
+
+    public void setTotalPages(Integer totalPages) {
+        this.totalPages = totalPages;
+    }
+
+    public Integer getCurrentPage() {
+        return currentPage;
+    }
+
+    public void setCurrentPage(Integer currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    public Integer getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
+    }
+}
