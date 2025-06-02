@@ -17,6 +17,9 @@ public class PagedResponseDTO<T> {
         this.pageSize = pageSize;
     }
 
+    public PagedResponseDTO() {
+    }
+
     public List<T> getElements() {
         return elements;
     }

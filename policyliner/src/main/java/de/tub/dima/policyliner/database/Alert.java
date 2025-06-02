@@ -18,7 +18,8 @@ public class Alert extends PanacheEntityBase {
     public String message;
     public AlertSeverity severity;
     public AlertType type;
-
+    public Boolean isResolved;
+    public LocalDateTime resolvedAt;
     @CreationTimestamp
     public LocalDateTime createdAt;
     @ManyToOne
