@@ -1,20 +1,20 @@
 package de.tub.dima.policyliner.dto;
 
-import jakarta.ws.rs.DefaultValue;
-
 public class SearchDTO {
-    @DefaultValue("") private String filter;
-    @DefaultValue("asc") private String sortOrder;
-    @DefaultValue("id") private String sortColumn;
-    @DefaultValue("10") private Integer pageSize;
-    @DefaultValue("0") private Integer pageNumber;
+    private String filter;
+    private String sortOrder;
+    private String sortColumn;
+    private Integer pageSize;
+    private Integer pageNumber;
+    private String booleanFilter;
 
-    public SearchDTO(String filter, String sortOrder, String sortColumn, Integer pageSize, Integer pageNumber) {
+    public SearchDTO(String filter, String sortOrder, String sortColumn, Integer pageSize, Integer pageNumber, String booleanFilter) {
         this.filter = filter;
         this.sortOrder = sortOrder;
         this.sortColumn = sortColumn;
         this.pageSize = pageSize;
         this.pageNumber = pageNumber;
+        this.booleanFilter = booleanFilter;
     }
 
     public String getFilter() {
@@ -55,5 +55,13 @@ public class SearchDTO {
 
     public void setPageNumber(Integer pageNumber) {
         this.pageNumber = pageNumber;
+    }
+
+    public String getBooleanFilter() {
+        return booleanFilter;
+    }
+
+    public void setBooleanFilter(String booleanFilter) {
+        this.booleanFilter = booleanFilter;
     }
 }

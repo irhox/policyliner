@@ -42,8 +42,8 @@ public class PolicyResource {
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO, String policyStatus) {
-        return policyService.searchPolicies(searchDTO, policyStatus);
+    public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {
+        return policyService.searchPolicies(searchDTO);
     }
 
 

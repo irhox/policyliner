@@ -1,4 +1,4 @@
-package de.tub.dima.policyliner.database;
+package de.tub.dima.policyliner.database.policyliner;
 
 import de.tub.dima.policyliner.constants.QueryStatus;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;

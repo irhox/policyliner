@@ -1,8 +1,8 @@
 package de.tub.dima.policyliner.services;
 
 import de.tub.dima.policyliner.constants.PolicyStatus;
-import de.tub.dima.policyliner.database.Policy;
-import de.tub.dima.policyliner.database.PolicyRepository;
+import de.tub.dima.policyliner.database.policyliner.Policy;
+import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
 import de.tub.dima.policyliner.dto.PagedResponseDTO;
 import de.tub.dima.policyliner.dto.PolicyDTO;
 import de.tub.dima.policyliner.dto.SearchDTO;
@@ -35,11 +35,11 @@ public class PolicyService {
     }
 
     // TODO: Implement sorting and filtering
-    public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO, String policyStatus) {
+    public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {
         PanacheQuery<Policy> policyQuery;
-        if (Objects.equals(policyStatus, PolicyStatus.ACTIVE.name()) ||
-                Objects.equals(policyStatus, PolicyStatus.INACTIVE.name())) {
-            policyQuery = policyRepository.find("status", policyStatus);
+        if (Objects.equals(searchDTO.getBooleanFilter(), PolicyStatus.ACTIVE.name()) ||
+                Objects.equals(searchDTO.getBooleanFilter(), PolicyStatus.INACTIVE.name())) {
+            policyQuery = policyRepository.find("status", searchDTO.getBooleanFilter());
         } else {
             policyQuery = policyRepository.findAll();
         }

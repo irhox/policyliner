@@ -1,4 +1,4 @@
-package de.tub.dima.policyliner.database;
+package de.tub.dima.policyliner.database.policyliner;
 
 import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.AlertType;

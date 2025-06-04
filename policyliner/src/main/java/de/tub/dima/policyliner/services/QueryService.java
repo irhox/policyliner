@@ -1,8 +1,8 @@
 package de.tub.dima.policyliner.services;
 
 import de.tub.dima.policyliner.constants.QueryStatus;
-import de.tub.dima.policyliner.database.DisclosureQuery;
-import de.tub.dima.policyliner.database.DisclosureQueryRepository;
+import de.tub.dima.policyliner.database.policyliner.DisclosureQuery;
+import de.tub.dima.policyliner.database.policyliner.DisclosureQueryRepository;
 import de.tub.dima.policyliner.dto.*;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;

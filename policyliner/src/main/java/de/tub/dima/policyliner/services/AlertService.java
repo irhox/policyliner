@@ -1,7 +1,7 @@
 package de.tub.dima.policyliner.services;
 
-import de.tub.dima.policyliner.database.Alert;
-import de.tub.dima.policyliner.database.AlertRepository;
+import de.tub.dima.policyliner.database.policyliner.Alert;
+import de.tub.dima.policyliner.database.policyliner.AlertRepository;
 import de.tub.dima.policyliner.dto.AlertDTO;
 import de.tub.dima.policyliner.dto.PagedResponseDTO;
 import de.tub.dima.policyliner.dto.SearchDTO;

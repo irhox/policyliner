@@ -22,6 +22,12 @@ public class QueryResource {
         this.queryService = queryService;
     }
 
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String helloPolicy() {
+        return "Hello Query";
+    }
+
     @POST
     @Path("/analyze")
     @Produces(MediaType.APPLICATION_JSON)

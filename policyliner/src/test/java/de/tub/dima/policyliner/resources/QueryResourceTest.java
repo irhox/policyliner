@@ -13,7 +13,7 @@ public class QueryResourceTest {
     @Test
     void testHelloEndpoint() {
         given()
-                .when().get(Endpoints.QUERY_ANALYZE)
+                .when().get("/query")
                 .then()
                 .statusCode(200)
                 .body(is("Hello Query"));
