@@ -1,0 +1,56 @@
+package de.tub.dima.policyliner.database.data;
+
+import io.quarkus.hibernate.orm.PersistenceUnit;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+
+import java.util.List;
+import java.util.Objects;
+
+@ApplicationScoped
+public class DataDBService {
+
+    @Inject
+    @PersistenceUnit("data")
+    EntityManager em;
+
+    @SuppressWarnings("unchecked")
+    public List<UserDefinedFunction> getUserDefinedFunctions() {
+        String nativeQuery = "select p.proname as functionName, pg_get_function_arguments(p.oid) as functionArguments " +
+                "from pg_proc p left join pg_namespace n on p.pronamespace = n.oid " +
+                "where n.nspname not in ('pg_catalog', 'information_schema') " +
+                "order by functionName";
+
+        List<List<String>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
+        return resultList.stream()
+                .map(list -> new UserDefinedFunction(list.getFirst(), list.get(1))).toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<MaterializedView> getMaterializedViews() {
+        String nativeQuery = "select matviewname as viewName, ispopulated as isPopulated, definition from pg_matviews order by viewName;";
+
+        List<List<Object>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
+        return resultList.stream()
+                .map(list ->
+                        new MaterializedView(
+                                list.getFirst().toString(),
+                                Objects.equals(list.get(1).toString(), "true"),
+                                list.get(2).toString()))
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<TableInformation> getTables() {
+        String nativeQuery = "SELECT table_name as tableName, table_schema as tableSchema FROM information_schema.tables WHERE table_schema = 'public';";
+        List<List<String>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
+        return resultList.stream()
+                .map(list ->
+                        new TableInformation(list.getFirst(), list.get(1)))
+                .toList();
+    }
+
+
+
+}
