@@ -1,8 +1,10 @@
 package de.tub.dima.policyliner.services;
 
 import de.tub.dima.policyliner.constants.PolicyStatus;
+import de.tub.dima.policyliner.database.data.DataDBService;
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
+import de.tub.dima.policyliner.dto.CreatePolicyDTO;
 import de.tub.dima.policyliner.dto.PagedResponseDTO;
 import de.tub.dima.policyliner.dto.PolicyDTO;
 import de.tub.dima.policyliner.dto.SearchDTO;
@@ -11,6 +13,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.panache.common.Page;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,9 +22,13 @@ import java.util.Objects;
 public class PolicyService {
 
     private final PolicyRepository policyRepository;
+    private final DataDBService dataDBService;
 
-    public PolicyService(PolicyRepository policyRepository) {
+    public PolicyService(
+            PolicyRepository policyRepository,
+            DataDBService dataDBService) {
         this.policyRepository = policyRepository;
+        this.dataDBService = dataDBService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
@@ -53,6 +60,16 @@ public class PolicyService {
                 .toList();
 
         return createPagedResponseDTO(policyList, searchDTO);
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public PolicyDTO createPolicy(CreatePolicyDTO createPolicyDTO) {
+        String policy = dataDBService.createPolicy(createPolicyDTO);
+        Policy newPolicy = new Policy();
+        newPolicy.policy = policy;
+        newPolicy.status = PolicyStatus.ACTIVE;
+        policyRepository.persist(newPolicy);
+        return convertToPolicyDTO(newPolicy);
     }
 
 

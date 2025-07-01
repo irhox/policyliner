@@ -15,6 +15,7 @@ public class Policy extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public String id;
+    @Column(name="policy", columnDefinition="TEXT")
     public String policy;
     @CreationTimestamp
     public LocalDateTime createdAt;

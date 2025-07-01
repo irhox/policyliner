@@ -1,5 +1,6 @@
 package de.tub.dima.policyliner.resources;
 
+import de.tub.dima.policyliner.dto.CreatePolicyDTO;
 import de.tub.dima.policyliner.dto.PagedResponseDTO;
 import de.tub.dima.policyliner.dto.PolicyDTO;
 import de.tub.dima.policyliner.dto.SearchDTO;
@@ -44,6 +45,15 @@ public class PolicyResource {
     @Produces(MediaType.APPLICATION_JSON)
     public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {
         return policyService.searchPolicies(searchDTO);
+    }
+
+    @POST
+    @Path("/create")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createPolicy(CreatePolicyDTO createPolicyDTO) {
+        Log.info("Creating policy");
+        PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
+        return Response.ok(createdPolicy).build();
     }
 
 

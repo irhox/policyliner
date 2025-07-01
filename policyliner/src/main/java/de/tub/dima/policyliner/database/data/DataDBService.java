@@ -1,9 +1,14 @@
 package de.tub.dima.policyliner.database.data;
 
+import de.tub.dima.policyliner.dto.CreatePolicyDTO;
+import de.tub.dima.policyliner.dto.ViewAttributeDTO;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -49,6 +54,37 @@ public class DataDBService {
                 .map(list ->
                         new TableInformation(list.getFirst(), list.get(1)))
                 .toList();
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public String createPolicy(CreatePolicyDTO createPolicyDTO) {
+        Log.info("Creating policy " + createPolicyDTO.getPolicyName() + " for table " + createPolicyDTO.getTableName());
+        // First, drop the existing view if it exists
+        String dropQuery = "DROP MATERIALIZED VIEW IF EXISTS " + createPolicyDTO.getPolicyName() + " CASCADE;";
+        Query dropViewQuery = em.createNativeQuery(dropQuery);
+        dropViewQuery.executeUpdate();
+
+        StringBuilder policyCreationQuery = new StringBuilder("CREATE MATERIALIZED VIEW ")
+                .append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");
+        for (ViewAttributeDTO attribute: createPolicyDTO.getColumns()) {
+            if (attribute.getFunctionName() != null) {
+                policyCreationQuery.append(attribute.getFunctionName()).append("(").append(attribute.getTableColumnName());
+                attribute.getFunctionArguments().forEach(arg -> policyCreationQuery.append(", ").append(arg));
+                policyCreationQuery.append(") AS ").append(attribute.getViewColumnName());
+            } else {
+                policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getTableColumnName()).append("1 ");
+            }
+            if (createPolicyDTO.getColumns().indexOf(attribute) < (createPolicyDTO.getColumns().size() - 1)) {
+                policyCreationQuery.append(", ");
+            }
+        }
+        policyCreationQuery.append("FROM ").append(createPolicyDTO.getTableName()).append(";");
+        Query policyQuery = em.createNativeQuery(policyCreationQuery.toString());
+        Log.info("Policy creation query: " + policyQuery.unwrap(org.hibernate.query.Query.class).getQueryString());
+        policyQuery.executeUpdate();
+        Log.info("Policy " + createPolicyDTO.getPolicyName() + " created successfully");
+
+        return policyQuery.unwrap(org.hibernate.query.Query.class).getQueryString();
     }
 
 
