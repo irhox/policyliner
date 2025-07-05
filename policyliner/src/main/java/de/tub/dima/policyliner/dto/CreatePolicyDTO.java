@@ -4,12 +4,12 @@ import java.util.List;
 
 public class CreatePolicyDTO {
     private String policyName;
-    private String tableName;
+    private List<String> tables;
     private List<ViewAttributeDTO> columns;
 
-    public CreatePolicyDTO(String policyName, String tableName, List<ViewAttributeDTO> columns) {
+    public CreatePolicyDTO(String policyName, List<String> tables, List<ViewAttributeDTO> columns) {
         this.policyName = policyName;
-        this.tableName = tableName;
+        this.tables = tables;
         this.columns = columns;
     }
 
@@ -20,8 +20,8 @@ public class CreatePolicyDTO {
         return policyName;
     }
 
-    public String getTableName() {
-        return tableName;
+    public List<String> getTables() {
+        return tables;
     }
 
     public List<ViewAttributeDTO> getColumns() {
@@ -32,8 +32,8 @@ public class CreatePolicyDTO {
         this.policyName = policyName;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public void setTables(List<String> tables) {
+        this.tables = tables;
     }
 
     public void setColumns(List<ViewAttributeDTO> columns) {

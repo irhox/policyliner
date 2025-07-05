@@ -56,9 +56,10 @@ public class DataDBService {
                 .toList();
     }
 
+    // TODO: extend for multiple tables
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public String createPolicy(CreatePolicyDTO createPolicyDTO) {
-        Log.info("Creating policy " + createPolicyDTO.getPolicyName() + " for table " + createPolicyDTO.getTableName());
+        Log.info("Creating policy " + createPolicyDTO.getPolicyName());
         // First, drop the existing view if it exists
         String dropQuery = "DROP MATERIALIZED VIEW IF EXISTS " + createPolicyDTO.getPolicyName() + " CASCADE;";
         Query dropViewQuery = em.createNativeQuery(dropQuery);
@@ -69,16 +70,18 @@ public class DataDBService {
         for (ViewAttributeDTO attribute: createPolicyDTO.getColumns()) {
             if (attribute.getFunctionName() != null) {
                 policyCreationQuery.append(attribute.getFunctionName()).append("(").append(attribute.getTableColumnName());
-                attribute.getFunctionArguments().forEach(arg -> policyCreationQuery.append(", ").append(arg));
+                if (attribute.getFunctionArguments() != null && !attribute.getFunctionArguments().isEmpty()) {
+                    attribute.getFunctionArguments().forEach(arg -> policyCreationQuery.append(", ").append(arg));
+                }
                 policyCreationQuery.append(") AS ").append(attribute.getViewColumnName());
             } else {
-                policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getTableColumnName()).append("1 ");
+                policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getTableColumnName());
             }
             if (createPolicyDTO.getColumns().indexOf(attribute) < (createPolicyDTO.getColumns().size() - 1)) {
                 policyCreationQuery.append(", ");
             }
         }
-        policyCreationQuery.append("FROM ").append(createPolicyDTO.getTableName()).append(";");
+        policyCreationQuery.append(" FROM ").append(createPolicyDTO.getTables().getFirst()).append(";");
         Query policyQuery = em.createNativeQuery(policyCreationQuery.toString());
         Log.info("Policy creation query: " + policyQuery.unwrap(org.hibernate.query.Query.class).getQueryString());
         policyQuery.executeUpdate();

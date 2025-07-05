@@ -48,10 +48,20 @@ public class PolicyResource {
     }
 
     @POST
-    @Path("/create")
+    @Path("/create/object")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createPolicy(CreatePolicyDTO createPolicyDTO) {
-        Log.info("Creating policy");
+    public Response createPolicyFromObject(CreatePolicyDTO createPolicyDTO) {
+        Log.info("Creating policy from object");
+        PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
+        return Response.ok(createdPolicy).build();
+    }
+
+    @POST
+    @Path("/create/query-string")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createPolicyFromQueryString(String disclosurePolicy) {
+        CreatePolicyDTO createPolicyDTO = policyService.parseDisclosurePolicy(disclosurePolicy);
+        Log.info("Creating policy from Mascara query string");
         PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
         return Response.ok(createdPolicy).build();
     }
