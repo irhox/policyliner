@@ -60,7 +60,7 @@ public class PolicyResource {
     @Path("/create/query-string")
     @Produces(MediaType.APPLICATION_JSON)
     public Response createPolicyFromQueryString(String disclosurePolicy) {
-        CreatePolicyDTO createPolicyDTO = policyService.parseDisclosurePolicy(disclosurePolicy);
+        CreatePolicyDTO createPolicyDTO = policyService.parseDisclosurePolicyStatement(disclosurePolicy);
         Log.info("Creating policy from Mascara query string");
         PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
         return Response.ok(createdPolicy).build();

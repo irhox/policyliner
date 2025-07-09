@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
 public class DataDBService {
@@ -81,7 +82,22 @@ public class DataDBService {
                 policyCreationQuery.append(", ");
             }
         }
-        policyCreationQuery.append(" FROM ").append(createPolicyDTO.getTables().getFirst()).append(";");
+        policyCreationQuery.append(" FROM ").append(createPolicyDTO.getTables().getFirst().getTableName());
+        AtomicInteger tableListCounter = new AtomicInteger();
+        if (createPolicyDTO.getTables().size() > 1) {
+            createPolicyDTO.getTables().stream().skip(1).forEach(table -> {
+                policyCreationQuery.append(" JOIN ").append(table.getTableName());
+                policyCreationQuery.append(" ON ")
+                        .append(table.getTableName())
+                        .append(".")
+                        .append(table.getForeignKey())
+                        .append(" = ")
+                        .append(createPolicyDTO.getTables().get(tableListCounter.get()).getTableName())
+                        .append(".").append(createPolicyDTO.getTables().get(tableListCounter.get()).getPrimaryKey());
+
+                tableListCounter.getAndIncrement();
+            });
+        }
         Query policyQuery = em.createNativeQuery(policyCreationQuery.toString());
         Log.info("Policy creation query: " + policyQuery.unwrap(org.hibernate.query.Query.class).getQueryString());
         policyQuery.executeUpdate();

@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 @ApplicationScoped
@@ -71,22 +72,49 @@ public class PolicyService {
         return convertToPolicyDTO(newPolicy);
     }
 
-    // Syntax of Disclosure Policy String:
+    // Syntax of Disclosure Policy Creation Statement:
     // disclose attribute list from table [, ...]
     // [with mask on attribute using masking_function] [,..]
     // [where condition]
-    public CreatePolicyDTO parseDisclosurePolicy(String disclosurePolicy) {
+    public CreatePolicyDTO parseDisclosurePolicyStatement(String disclosurePolicy) {
         final CreatePolicyDTO disclosurePolicyInfo = new CreatePolicyDTO();
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
         final String tables = disclosurePolicy.contains("with mask on")
                 ? disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, disclosurePolicy.indexOf("with"))
                 : disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, disclosurePolicy.indexOf("where"));
 
-        String dataMasks = disclosurePolicy.substring(disclosurePolicy.indexOf("with mask on")+12, disclosurePolicy.indexOf("where"));
-
+        final String dataMasks = disclosurePolicy.substring(disclosurePolicy.indexOf("with mask on")+12, disclosurePolicy.indexOf("where"));
+        final String conditions = disclosurePolicy.substring(disclosurePolicy.indexOf("where")+5);
+        final List<String> conditionsList = Stream.of(conditions.split("and")).map(String::trim).toList();
 
         List<String> attributeList = Stream.of(attributes.split(",")).map(String::trim).toList();
-        List<String> tableList = Stream.of(tables.split(",")).map(String::trim).toList();
+        List<String> tableNames = Stream.of(tables.split(",")).map(String::trim).toList();
+        if (tableNames.size() == 1) {
+            TableInfoDTO tableInfo = new TableInfoDTO(tableNames.getFirst(), null, null);
+            disclosurePolicyInfo.setTables(List.of(tableInfo));
+        } else {
+            List<TableInfoDTO> tableList = tableNames.stream().map(name -> {
+                List<String> tableConditionsList = conditionsList.stream().filter(c -> c.contains(name)).toList();
+                final TableInfoDTO tableInfo = new TableInfoDTO(name.trim(), null, null);
+                tableConditionsList.forEach(condition -> {
+                    int beginIndex = condition.indexOf(name + ".") + name.length()+1;
+                    AtomicInteger endIndex = new AtomicInteger(condition.length());
+                    if (condition.indexOf("=") > condition.indexOf(name + ".")) {
+                        endIndex.set(condition.indexOf("="));
+                        String primaryKey = condition.substring(beginIndex, endIndex.get()).trim();
+                        tableInfo.setPrimaryKey(primaryKey);
+                    } else {
+                        String foreignKey = condition.substring(beginIndex, endIndex.get()).trim();
+                        tableInfo.setForeignKey(foreignKey);
+                    }
+
+                });
+                return tableInfo;
+            }).toList();
+
+            disclosurePolicyInfo.setTables(tableList);
+        }
+
         List<ViewAttributeDTO> dataMaskObj = new ArrayList<>(Stream.of(dataMasks.split("with mask on")).map(mask -> {
             String attribute = mask.substring(0, mask.indexOf("using")).trim();
             String maskingFunction = mask.substring(mask.indexOf("using")+5, mask.indexOf("("));
@@ -111,9 +139,7 @@ public class PolicyService {
                 });
 
         disclosurePolicyInfo.setColumns(dataMaskObj);
-        disclosurePolicyInfo.setTables(tableList);
-
-        disclosurePolicyInfo.setPolicyName(String.join("_", tableList) + "_policy");
+        disclosurePolicyInfo.setPolicyName(String.join("_", tableNames) + "_policy");
 
         return disclosurePolicyInfo;
     }
