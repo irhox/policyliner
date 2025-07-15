@@ -23,3 +23,45 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+### policyliner-demo-ui
+# Compiled output
+/policyliner-demo-ui/dist
+/policyliner-demo-ui/tmp
+/policyliner-demo-ui/out-tsc
+/policyliner-demo-ui/bazel-out
+
+# Node
+/policyliner-demo-ui/node_modules
+/policyliner-demo-ui/npm-debug.log
+/policyliner-demo-ui/yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+
+# System files
+.DS_Store
+Thumbs.db

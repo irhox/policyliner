@@ -1,0 +1,13 @@
+<div class="policy-creation-header">
+  <h1>Policy Creation From DDL-like Statement</h1>
+</div>
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="policy-creation-form">
+  <mat-form-field appearance="fill" class="input-field">
+    <mat-label>Enter Policy Creation Statement</mat-label>
+    <textarea matInput formControlName="inputText" rows="5"></textarea>
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
+    {{ loading ? 'Submitting...' : 'Submit' }}
+  </button>
+</form>
