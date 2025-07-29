@@ -117,8 +117,8 @@ public class PolicyService {
 
         List<ViewAttributeDTO> dataMaskObj = new ArrayList<>(Stream.of(dataMasks.split("with mask on")).map(mask -> {
             String attribute = mask.substring(0, mask.indexOf("using")).trim();
-            String maskingFunction = mask.substring(mask.indexOf("using")+5, mask.indexOf("("));
-            List<String> arguments = Stream.of(mask.substring(mask.indexOf("(")+1, mask.indexOf(")")).split(",")).map(String::trim).toList();
+            String maskingFunction = mask.substring(mask.indexOf("using")+5, mask.lastIndexOf("("));
+            List<String> arguments = Stream.of(mask.substring(mask.lastIndexOf("(")+1, mask.lastIndexOf(")")).split(",")).map(String::trim).toList();
             ViewAttributeDTO result = new ViewAttributeDTO();
             result.setFunctionName(maskingFunction);
             result.setTableColumnName(attribute);
@@ -130,7 +130,9 @@ public class PolicyService {
         }).toList());
 
         attributeList.stream()
-                .filter(a -> !dataMaskObj.stream().map(ViewAttributeDTO::getTableColumnName).toList().contains(a))
+                .filter(a -> !dataMaskObj.stream().map(ViewAttributeDTO::getTableColumnName).toList().contains(a) &&
+                        dataMaskObj.stream().filter(v -> v.getTableColumnName().contains(a)).toList().isEmpty()
+                )
                 .forEach(col -> {
                     ViewAttributeDTO viewAttributeDTO = new ViewAttributeDTO();
                     viewAttributeDTO.setTableColumnName(col.trim());

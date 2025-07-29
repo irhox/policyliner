@@ -20,6 +20,8 @@ public class Policy extends PanacheEntityBase {
     @CreationTimestamp
     public LocalDateTime createdAt;
     public LocalDateTime deactivatedAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name="status")
     public PolicyStatus status;
     @OneToMany(mappedBy = "policy")
     public List<Alert> alerts;

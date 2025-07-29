@@ -74,7 +74,17 @@ public class DataDBService {
                 if (attribute.getFunctionArguments() != null && !attribute.getFunctionArguments().isEmpty()) {
                     attribute.getFunctionArguments().forEach(arg -> policyCreationQuery.append(", ").append(arg));
                 }
-                policyCreationQuery.append(") AS ").append(attribute.getViewColumnName());
+                policyCreationQuery.append(") AS ");
+                String viewColumnName = attribute.getViewColumnName()
+                        .replace("(", "_")
+                        .replace(")", "")
+                        .replace(" ", "");
+                if (attribute.getViewColumnName().contains(",")) {
+                    viewColumnName = viewColumnName.substring(0, viewColumnName.indexOf(","));
+                }
+
+                policyCreationQuery.append(viewColumnName);
+
             } else {
                 policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getTableColumnName());
             }
