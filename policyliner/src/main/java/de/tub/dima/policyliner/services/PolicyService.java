@@ -76,8 +76,11 @@ public class PolicyService {
     // disclose attribute list from table [, ...]
     // [with mask on attribute using masking_function] [,..]
     // [where condition]
-    public CreatePolicyDTO parseDisclosurePolicyStatement(String disclosurePolicy) {
+    public CreatePolicyDTO parseDisclosurePolicyStatement(CreatePolicyFromStringDTO disclosurePolicyDTO) {
+        String disclosurePolicy = disclosurePolicyDTO.getPolicy();
         final CreatePolicyDTO disclosurePolicyInfo = new CreatePolicyDTO();
+        disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
+
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
         final String tables = disclosurePolicy.contains("with mask on")
                 ? disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, disclosurePolicy.indexOf("with"))

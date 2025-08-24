@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
@@ -48,6 +49,17 @@ public class DataDBService {
     }
 
     @SuppressWarnings("unchecked")
+    public List<View> getViews() {
+        String nativeQuery = "SELECT matviewname as viewName FROM pg_matviews;";
+
+        List<List<Object>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
+        return resultList.stream()
+                .map(list ->
+                        new View(list.getFirst().toString()))
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
     public List<TableInformation> getTables() {
         String nativeQuery = "SELECT table_name as tableName, table_schema as tableSchema FROM information_schema.tables WHERE table_schema = 'public';";
         List<List<String>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
@@ -61,12 +73,24 @@ public class DataDBService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public String createPolicy(CreatePolicyDTO createPolicyDTO) {
         Log.info("Creating policy " + createPolicyDTO.getPolicyName());
-        // First, drop the existing view if it exists
-        String dropQuery = "DROP MATERIALIZED VIEW IF EXISTS " + createPolicyDTO.getPolicyName() + " CASCADE;";
-        Query dropViewQuery = em.createNativeQuery(dropQuery);
-        dropViewQuery.executeUpdate();
+        Random random = new Random();
+        String viewType = createPolicyDTO.getIsMaterializedView() ? "MATERIALIZED VIEW" : "VIEW";
+        // check if a view with the same name already exists
+        if (!createPolicyDTO.getIsMaterializedView()) {
+            List<MaterializedView> materializedViews = getMaterializedViews();
+            if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
+                createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
+            }
+        }
+        // check if a materialized view with the same name already exists
+        else {
+            List<View> views = getViews();
+            if (views.stream().map(View::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
+                createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
+            }
+        }
 
-        StringBuilder policyCreationQuery = new StringBuilder("CREATE MATERIALIZED VIEW ")
+        StringBuilder policyCreationQuery = new StringBuilder("CREATE OR REPLACE ").append(viewType).append(" ")
                 .append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");
         for (ViewAttributeDTO attribute: createPolicyDTO.getColumns()) {
             if (attribute.getFunctionName() != null) {

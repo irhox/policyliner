@@ -3,6 +3,7 @@ package de.tub.dima.policyliner.services;
 import de.tub.dima.policyliner.constants.QueryStatus;
 import de.tub.dima.policyliner.database.policyliner.DisclosureQuery;
 import de.tub.dima.policyliner.database.policyliner.DisclosureQueryRepository;
+import de.tub.dima.policyliner.database.policyliner.UserRepository;
 import de.tub.dima.policyliner.dto.*;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
@@ -15,9 +16,11 @@ import java.util.List;
 public class QueryService {
 
     private final DisclosureQueryRepository disclosureQueryRepository;
+    private final UserRepository userRepository;
 
-    public QueryService(DisclosureQueryRepository disclosureQueryRepository) {
+    public QueryService(DisclosureQueryRepository disclosureQueryRepository, UserRepository userRepository) {
         this.disclosureQueryRepository = disclosureQueryRepository;
+        this.userRepository = userRepository;
     }
 
     // TODO: Work In Progress
@@ -25,7 +28,7 @@ public class QueryService {
         Log.info("Evaluating query of user: " + disclosureQueryDTO.getUserId());
         List<DisclosureQuery> userQueries = disclosureQueryRepository.findByUserId(disclosureQueryDTO.getUserId());
         DisclosureQuery disclosureQuery = new DisclosureQuery();
-        disclosureQuery.userId = disclosureQueryDTO.getUserId();
+        disclosureQuery.user = userRepository.findById(disclosureQueryDTO.getUserId());
         disclosureQuery.query = disclosureQueryDTO.getQuery();
         if (userQueries.isEmpty()) {
             Log.info("No previous queries by user: " + disclosureQueryDTO.getUserId() + " found");

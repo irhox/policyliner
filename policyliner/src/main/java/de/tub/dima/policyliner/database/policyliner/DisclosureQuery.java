@@ -18,7 +18,8 @@ public class DisclosureQuery extends PanacheEntityBase {
     @GeneratedValue(strategy = GenerationType.UUID)
     public String id;
     public String query;
-    public String userId;
+    @ManyToOne
+    public User user;
     @CreationTimestamp
     public LocalDateTime createdAt;
     public QueryStatus status;

@@ -1,9 +1,6 @@
 package de.tub.dima.policyliner.resources;
 
-import de.tub.dima.policyliner.dto.CreatePolicyDTO;
-import de.tub.dima.policyliner.dto.PagedResponseDTO;
-import de.tub.dima.policyliner.dto.PolicyDTO;
-import de.tub.dima.policyliner.dto.SearchDTO;
+import de.tub.dima.policyliner.dto.*;
 import de.tub.dima.policyliner.services.PolicyService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -59,8 +56,8 @@ public class PolicyResource {
     @POST
     @Path("/create/query-string")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createPolicyFromQueryString(String disclosurePolicy) {
-        CreatePolicyDTO createPolicyDTO = policyService.parseDisclosurePolicyStatement(disclosurePolicy);
+    public Response createPolicyFromQueryString(CreatePolicyFromStringDTO disclosurePolicyDTO) {
+        CreatePolicyDTO createPolicyDTO = policyService.parseDisclosurePolicyStatement(disclosurePolicyDTO);
         Log.info("Creating policy from Mascara query string");
         PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
         return Response.ok(createdPolicy).build();
