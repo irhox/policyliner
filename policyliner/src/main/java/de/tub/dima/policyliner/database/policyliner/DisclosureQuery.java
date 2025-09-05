@@ -17,11 +17,13 @@ public class DisclosureQuery extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public String id;
+    @Column(name="query", columnDefinition="TEXT")
     public String query;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     public User user;
     @CreationTimestamp
     public LocalDateTime createdAt;
+    @Enumerated(EnumType.STRING)
     public QueryStatus status;
     public String message;
     @OneToMany(mappedBy = "query")

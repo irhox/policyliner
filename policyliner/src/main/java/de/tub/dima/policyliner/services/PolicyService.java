@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -66,10 +67,27 @@ public class PolicyService {
     public PolicyDTO createPolicy(CreatePolicyDTO createPolicyDTO) {
         String policy = dataDBService.createPolicy(createPolicyDTO);
         Policy newPolicy = new Policy();
+        if (createPolicyDTO.getIsMaterializedView()) {
+            newPolicy.materializedViewName = createPolicyDTO.getPolicyName();
+        } else {
+            newPolicy.viewName = createPolicyDTO.getPolicyName();
+        }
         newPolicy.policy = policy;
         newPolicy.status = PolicyStatus.ACTIVE;
         policyRepository.persist(newPolicy);
         return convertToPolicyDTO(newPolicy);
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void createMaterializedViewForExistingPolicy(Policy policy){
+        Map<String, String> materializedViewMap = dataDBService.createMaterializedViewFromExistingPolicy(policy);
+        if (materializedViewMap.isEmpty()) {
+            throw new RuntimeException("Could not create materialized view for policy " + policy.viewName);
+        }
+        policy.policy = materializedViewMap.values().stream().findFirst().get();
+        policy.materializedViewName = materializedViewMap.keySet().stream().findFirst().get();
+        policyRepository.getEntityManager().merge(policy);
+        convertToPolicyDTO(policy);
     }
 
     // Syntax of Disclosure Policy Creation Statement:

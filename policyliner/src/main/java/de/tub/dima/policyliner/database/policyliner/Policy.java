@@ -17,6 +17,8 @@ public class Policy extends PanacheEntityBase {
     public String id;
     @Column(name="policy", columnDefinition="TEXT")
     public String policy;
+    public String viewName;
+    public String materializedViewName;
     @CreationTimestamp
     public LocalDateTime createdAt;
     public LocalDateTime deactivatedAt;

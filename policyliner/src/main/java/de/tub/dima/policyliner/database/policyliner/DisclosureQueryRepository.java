@@ -15,7 +15,7 @@ public class DisclosureQueryRepository implements PanacheRepository<DisclosureQu
     }
 
     public List<DisclosureQuery> findByUserId(String userId) {
-        return list("userId", userId);
+        return list("user.id", userId);
     }
 
     public List<DisclosureQuery> findByStatus(QueryStatus status) {

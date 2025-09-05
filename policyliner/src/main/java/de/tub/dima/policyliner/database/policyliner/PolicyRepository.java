@@ -21,4 +21,8 @@ public class PolicyRepository implements PanacheRepository<Policy> {
     public List<Policy> findPoliciesBetween(LocalDateTime from, LocalDateTime to) {
         return list(" createdAt >= ?1 AND createdAt <= ?2", from, to);
     }
+
+    public List<Policy> findByNames(List<String> policyNameList) {
+        return list("materializedViewName in ?1 OR viewName in ?1", policyNameList);
+    }
 }

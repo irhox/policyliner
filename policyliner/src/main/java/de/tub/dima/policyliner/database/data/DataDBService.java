@@ -1,5 +1,6 @@
 package de.tub.dima.policyliner.database.data;
 
+import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.dto.CreatePolicyDTO;
 import de.tub.dima.policyliner.dto.ViewAttributeDTO;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -11,6 +12,7 @@ import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +71,23 @@ public class DataDBService {
                 .toList();
     }
 
-    // TODO: extend for multiple tables
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public Map<String, String> createMaterializedViewFromExistingPolicy(Policy policy){
+        final String currentPolicyQuery = policy.policy;
+        String newPolicyQuery = currentPolicyQuery.replace("CREATE OR REPLACE VIEW", "CREATE MATERIALIZED VIEW IF NOT EXISTS");
+        String materializedViewName = policy.viewName + "_materialized";
+        List <MaterializedView> materializedViews = getMaterializedViews();
+        if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(materializedViewName)){
+            Random random = new Random();
+            materializedViewName = materializedViewName + random.nextInt(1000);
+        }
+        newPolicyQuery = newPolicyQuery.replace(policy.viewName, materializedViewName);
+        Query materializedViewQuery = em.createNativeQuery(newPolicyQuery);
+        materializedViewQuery.executeUpdate();
+        Log.info("Materialized view " + materializedViewName + " created successfully.");
+        return Map.of(materializedViewName, newPolicyQuery);
+    }
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public String createPolicy(CreatePolicyDTO createPolicyDTO) {
         Log.info("Creating policy " + createPolicyDTO.getPolicyName());
@@ -90,8 +108,8 @@ public class DataDBService {
             }
         }
 
-        StringBuilder policyCreationQuery = new StringBuilder("CREATE OR REPLACE ").append(viewType).append(" ")
-                .append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");
+        StringBuilder policyCreationQuery = viewType.equals("MATERIALIZED VIEW") ? new StringBuilder("CREATE MATERIALIZED VIEW IF NOT EXISTS ") : new StringBuilder("CREATE OR REPLACE VIEW ");
+        policyCreationQuery.append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");
         for (ViewAttributeDTO attribute: createPolicyDTO.getColumns()) {
             if (attribute.getFunctionName() != null) {
                 policyCreationQuery.append(attribute.getFunctionName()).append("(").append(attribute.getTableColumnName());
