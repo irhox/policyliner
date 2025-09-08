@@ -50,9 +50,27 @@ public class DataDBService {
                 .toList();
     }
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public List<String> getColumnNamesOfViews(List<String> viewNameList) {
+        String nativeQueryString = "SELECT att.attname as column_name FROM pg_catalog.pg_attribute att join pg_catalog.pg_class mv ON mv.oid = att.attrelid" +
+                            " where (mv.relkind = 'm' OR mv.relkind = 'v')" +
+                            " AND mv.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')" +
+                            " AND not att.attisdropped" +
+                            " AND att.attnum > 0" +
+                            " AND mv.relname in :viewNameList;";
+
+        Query nativeQuery = em.createNativeQuery(nativeQueryString, List.class);
+        nativeQuery.setParameter("viewNameList", viewNameList);
+        List<List<Object>> resultList = nativeQuery.getResultList();
+        return resultList.stream()
+                .map(o -> o.getFirst().toString())
+                .toList();
+
+    }
+
     @SuppressWarnings("unchecked")
     public List<View> getViews() {
-        String nativeQuery = "SELECT matviewname as viewName FROM pg_matviews;";
+        String nativeQuery = "select table_name as viewName from INFORMATION_SCHEMA.views WHERE table_schema = ANY (current_schemas(false))";
 
         List<List<Object>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
         return resultList.stream()

@@ -4,6 +4,7 @@ import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.AlertType;
 import de.tub.dima.policyliner.constants.QueryComparatorType;
 import de.tub.dima.policyliner.constants.QueryStatus;
+import de.tub.dima.policyliner.database.data.DataDBService;
 import de.tub.dima.policyliner.database.policyliner.*;
 import de.tub.dima.policyliner.dto.PagedResponseDTO;
 import de.tub.dima.policyliner.dto.QueryRequestDTO;
@@ -28,22 +29,30 @@ public class QueryService {
     private final PolicyRepository policyRepository;
     private final UserRepository userRepository;
     private final PolicyService policyService;
+    private final DataDBService dataDBService;
 
-    public QueryService(DisclosureQueryRepository disclosureQueryRepository, PolicyRepository policyRepository, UserRepository userRepository, PolicyService policyService) {
+    public QueryService(
+            DisclosureQueryRepository disclosureQueryRepository,
+            PolicyRepository policyRepository,
+            UserRepository userRepository,
+            PolicyService policyService,
+            DataDBService dataDBService
+    ) {
         this.disclosureQueryRepository = disclosureQueryRepository;
         this.policyRepository = policyRepository;
         this.userRepository = userRepository;
         this.policyService = policyService;
+        this.dataDBService = dataDBService;
     }
 
     // TODO: Work In Progress
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public QueryResponseDTO analyzeQuery(QueryRequestDTO disclosureQueryDTO) {
         Log.info("Evaluating query of user: " + disclosureQueryDTO.getUserId());
         DisclosureQuery disclosureQuery = new DisclosureQuery();
 
 
-        // check if user exists, if it doesn't, create new user
+        // check if the user exists, if it doesn't, create the new user
         User queryUser = userRepository.findById(disclosureQueryDTO.getUserId());
         if (queryUser == null) {
             Log.info("User with id: " + disclosureQueryDTO.getUserId() + " not found");
@@ -131,7 +140,7 @@ public class QueryService {
                     disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use materialized views in order to prevent Data Reconstruction attack.";
                     disclosureQuery.query = newQuery;
                     Log.info("Changed query of user: " + disclosureQueryDTO.getUserId() + " to: " + newQuery + ".");
-                    // create alert for a modified user
+                    // create an alert for a modified user
                     Alert newAlert = new Alert();
                     newAlert.query = disclosureQuery;
                     newAlert.message = disclosureQuery.message;
@@ -140,8 +149,9 @@ public class QueryService {
                     newAlert.isResolved = false;
                     newAlert.persist();
 
+
                 } else {
-                    // create alert for less than 3 similar queries
+                    // create an alert for less than 3 similar queries
                     disclosureQuery.status = QueryStatus.SUSPECT;
                     disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Suspect for Data Reconstruction Attack";
                     // create alert for a suspect user
@@ -186,39 +196,44 @@ public class QueryService {
         if (previousQuery.equals(currentQuery)) {
             return 0.0;
         }
-        String previousQueryTables = previousQuery.substring(previousQuery.indexOf("FROM"), previousQuery.contains("WHERE") ? previousQuery.indexOf("WHERE") : previousQuery.length()).trim();
-        String currentQueryTables = currentQuery.substring(currentQuery.indexOf("FROM"), currentQuery.contains("WHERE") ? currentQuery.indexOf("WHERE") : currentQuery.length()).trim();
-        if (previousQueryTables.equals(currentQueryTables)) {
-            return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio);
+        String previousQueryTables = previousQuery.substring(previousQuery.indexOf("FROM")+4, previousQuery.contains("WHERE") ? previousQuery.indexOf("WHERE") : previousQuery.length()).trim();
+        String currentQueryTables = currentQuery.substring(currentQuery.indexOf("FROM")+4, currentQuery.contains("WHERE") ? currentQuery.indexOf("WHERE") : currentQuery.length()).trim();
+        List<String> previousTableList = Arrays.stream(previousQueryTables.split(",")).map(String::trim).toList();
+        List<String> currentTableList = Arrays.stream(currentQueryTables.split(",")).map(String::trim).toList();
+        List<String> differentTables = currentTableList.stream().filter(t -> !previousTableList.contains(t)).toList();
+
+        if (previousQueryTables.equals(currentQueryTables) || differentTables.isEmpty()) {
+            return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableList, currentTableList);
         } else {
-            List<String> previousTableList = Arrays.stream(previousQueryTables.split(",")).map(String::trim).toList();
-            List<String> currentTableList = Arrays.stream(currentQueryTables.split(",")).map(String::trim).toList();
-            List<String> differentTables = currentTableList.stream().filter(t -> !previousTableList.contains(t)).toList();
-            if (differentTables.isEmpty()) {
-                return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio);
+            differentTableRatio = (double) differentTables.size() / currentTableList.size();
+            if (differentTableRatio == 1) {
+                return 1.0;
             } else {
-                differentTableRatio = (double) differentTables.size() / currentTableList.size();
-                if (differentTableRatio == 1) {
-                    return 1.0;
-                } else {
-                    return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio);
-                }
+                return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableList, currentTableList);
             }
         }
     }
 
-    private static double compareTableColumnsAndWhereClauses(String previousQuery, String currentQuery, double differentTableRatio) {
+    private double compareTableColumnsAndWhereClauses(String previousQuery, String currentQuery, double differentTableRatio, List<String> previousTableList, List<String> currentTableList) {
         double differentColumnRatio;
         double differentWhereClauseRatio = 0.0;
         // comparing query columns
-        String previousQueryColumns = previousQuery.substring(previousQuery.indexOf("SELECT"), previousQuery.indexOf("FROM")).trim();
-        String currentQueryColumns = currentQuery.substring(currentQuery.indexOf("SELECT"), currentQuery.indexOf("FROM")).trim();
+        String previousQueryColumns = previousQuery.substring(previousQuery.indexOf("SELECT")+6, previousQuery.indexOf("FROM")).trim();
+        String currentQueryColumns = currentQuery.substring(currentQuery.indexOf("SELECT")+6, currentQuery.indexOf("FROM")).trim();
+        List<String> previousColumnList = Arrays.stream(previousQueryColumns.split(",")).map(String::trim).toList();
+        List<String> currentColumnList = Arrays.stream(currentQueryColumns.split(",")).map(String::trim).toList();
+        if (previousQueryColumns.contains("*")) {
+            previousColumnList = dataDBService.getColumnNamesOfViews(previousTableList);
+        }
+        if (currentQueryColumns.contains("*")) {
+            currentColumnList = dataDBService.getColumnNamesOfViews(currentTableList);
+        }
+        final List<String> finalPreviousColumnList = previousColumnList;
+        List<String> differentColumns = currentColumnList.stream().filter(c -> !finalPreviousColumnList.contains(c)).toList();
+
         if (previousQueryColumns.equals(currentQueryColumns)) {
             return 0.0;
         } else {
-            List<String> previousColumnList = Arrays.stream(previousQueryColumns.split(",")).map(String::trim).toList();
-            List<String> currentColumnList = Arrays.stream(currentQueryColumns.split(",")).map(String::trim).toList();
-            List<String> differentColumns = currentColumnList.stream().filter(c -> !previousColumnList.contains(c)).toList();
             if (differentColumns.isEmpty()) {
                 return 0.0;
             } else {
@@ -227,8 +242,8 @@ public class QueryService {
                     return 1.0;
                 } else if (previousQuery.contains("WHERE") && currentQuery.contains("WHERE")){
                     // comparing where clauses
-                    String previousQueryWhereClause = previousQuery.substring(previousQuery.indexOf("WHERE")).trim();
-                    String currentQueryWhereClause = currentQuery.substring(currentQuery.indexOf("WHERE")).trim();
+                    String previousQueryWhereClause = previousQuery.substring(previousQuery.indexOf("WHERE")+5).trim();
+                    String currentQueryWhereClause = currentQuery.substring(currentQuery.indexOf("WHERE")+5).trim();
                     if (!previousQueryWhereClause.equals(currentQueryWhereClause)) {
                         List<String> previousWhereClauseList = Arrays.stream(previousQueryWhereClause.split("(?i)and")).map(String::trim).toList();
                         List<String> currentWhereClauseList = Arrays.stream(currentQueryWhereClause.split("(?i)and")).map(String::trim).toList();
