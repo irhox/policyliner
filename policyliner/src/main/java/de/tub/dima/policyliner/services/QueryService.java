@@ -189,7 +189,6 @@ public class QueryService {
     // if tables and columns are equal, the where clauses are not checked and the ratio is returned as 0
     // if tables are totally different, the ratio is returned as 1
     // if columns are totally different, the ratio is returned as 1
-    // TODO: check if tables are from the same policy - materialized view vs view
     private Double checkDifferenceOfQueries(String previousQuery, String currentQuery) {
         double differentTableRatio = 0.0;
 
@@ -199,8 +198,11 @@ public class QueryService {
         String previousQueryTables = previousQuery.substring(previousQuery.indexOf("FROM")+4, previousQuery.contains("WHERE") ? previousQuery.indexOf("WHERE") : previousQuery.length()).trim();
         String currentQueryTables = currentQuery.substring(currentQuery.indexOf("FROM")+4, currentQuery.contains("WHERE") ? currentQuery.indexOf("WHERE") : currentQuery.length()).trim();
         List<String> previousTableList = Arrays.stream(previousQueryTables.split(",")).map(String::trim).toList();
+        List<String> fullPreviousTableList = policyRepository.findByNames(previousTableList).stream().flatMap(p -> Stream.of(p.materializedViewName, p.viewName)).toList();
+
         List<String> currentTableList = Arrays.stream(currentQueryTables.split(",")).map(String::trim).toList();
-        List<String> differentTables = currentTableList.stream().filter(t -> !previousTableList.contains(t)).toList();
+        List<String> differentTables = currentTableList.stream().filter(t -> !fullPreviousTableList.contains(t)).toList();
+
 
         if (previousQueryTables.equals(currentQueryTables) || differentTables.isEmpty()) {
             return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableList, currentTableList);
