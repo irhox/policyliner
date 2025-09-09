@@ -189,6 +189,8 @@ public class QueryService {
     // if tables and columns are equal, the where clauses are not checked and the ratio is returned as 0
     // if tables are totally different, the ratio is returned as 1
     // if columns are totally different, the ratio is returned as 1
+    // TODO: deal with columns of structure: table.column
+    // TODO: deal with columns and table names of structure: column as name, table as newname
     private Double checkDifferenceOfQueries(String previousQuery, String currentQuery) {
         double differentTableRatio = 0.0;
 
