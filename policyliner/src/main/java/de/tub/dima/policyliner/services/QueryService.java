@@ -124,10 +124,19 @@ public class QueryService {
                             .substring(
                                     disclosureQueryDTO.getQuery().indexOf("FROM")+4,
                                     disclosureQueryDTO.getQuery().contains("WHERE") ? disclosureQueryDTO.getQuery().indexOf("WHERE") : disclosureQueryDTO.getQuery().length());
-                    List<String> policyNameList = Stream.of(tablesString.split(",")).map(String::trim).toList();
-                    Log.info("STRING LIST: " + policyNameList); // TODO
+                    List<String> policyNameList = Stream.of(tablesString.split(","))
+                            .map(pt -> {
+                                String tableName = pt.trim();
+                                if (pt.contains("as")){
+                                    tableName = pt.substring(0, pt.indexOf("as")).trim();
+                                } else if (pt.contains("AS")) {
+                                    tableName = pt.substring(0, pt.indexOf("AS")).trim();
+                                }
+                                tableName = tableName.replaceAll(";", "");
+                                return tableName.trim();
+                            }).toList();
+
                     List<Policy> policyList = policyRepository.findByNames(policyNameList);
-                    Log.info("POLICY LIST: " + policyList.toString()); // TODO
                     if (policyList.isEmpty() || policyList.size() != policyNameList.size()) {
                         throw new RuntimeException("Error while retrieving policies for policy name list: " + policyNameList + ".");
                     }
@@ -189,8 +198,6 @@ public class QueryService {
     // if tables and columns are equal, the where clauses are not checked and the ratio is returned as 0
     // if tables are totally different, the ratio is returned as 1
     // if columns are totally different, the ratio is returned as 1
-    // TODO: deal with columns of structure: table.column
-    // TODO: deal with columns and table names of structure: column as name, table as newname
     private Double checkDifferenceOfQueries(String previousQuery, String currentQuery) {
         double differentTableRatio = 0.0;
 
@@ -199,10 +206,35 @@ public class QueryService {
         }
         String previousQueryTables = previousQuery.substring(previousQuery.indexOf("FROM")+4, previousQuery.contains("WHERE") ? previousQuery.indexOf("WHERE") : previousQuery.length()).trim();
         String currentQueryTables = currentQuery.substring(currentQuery.indexOf("FROM")+4, currentQuery.contains("WHERE") ? currentQuery.indexOf("WHERE") : currentQuery.length()).trim();
-        List<String> previousTableList = Arrays.stream(previousQueryTables.split(",")).map(String::trim).toList();
-        List<String> fullPreviousTableList = policyRepository.findByNames(previousTableList).stream().flatMap(p -> Stream.of(p.materializedViewName, p.viewName)).toList();
+        List<String> previousTableList = Arrays.stream(previousQueryTables.split(","))
+                .map(pt -> {
+                    String tableName = pt.trim();
+                    if (pt.contains("as")){
+                        tableName = pt.substring(0, pt.indexOf("as")).trim();
+                    } else if (pt.contains("AS")) {
+                        tableName = pt.substring(0, pt.indexOf("AS")).trim();
+                    }
+                    tableName = tableName.replaceAll(";", "");
+                    return tableName.trim();
+                }).toList();
+        List<String> fullPreviousTableList = policyRepository.findByNames(previousTableList).stream().flatMap(p -> {
+            if (p.materializedViewName != null && p.viewName != null) return Stream.of(p.materializedViewName, p.viewName);
+            else if (p.materializedViewName != null) return Stream.of(p.materializedViewName);
+            else return Stream.ofNullable(p.viewName);
+        }).toList();
 
-        List<String> currentTableList = Arrays.stream(currentQueryTables.split(",")).map(String::trim).toList();
+        List<String> currentTableList = Arrays.stream(currentQueryTables.split(","))
+                .map(pt -> {
+                    String tableName = pt.trim();
+                    if (pt.contains("as")){
+                        tableName = pt.substring(0, pt.indexOf("as")).trim();
+                    } else if (pt.contains("AS")) {
+                        tableName = pt.substring(0, pt.indexOf("AS")).trim();
+                    }
+                    tableName = tableName.replaceAll(";", "");
+                    return tableName.trim();
+                }).toList();
+
         List<String> differentTables = currentTableList.stream().filter(t -> !fullPreviousTableList.contains(t)).toList();
 
 
@@ -224,8 +256,35 @@ public class QueryService {
         // comparing query columns
         String previousQueryColumns = previousQuery.substring(previousQuery.indexOf("SELECT")+6, previousQuery.indexOf("FROM")).trim();
         String currentQueryColumns = currentQuery.substring(currentQuery.indexOf("SELECT")+6, currentQuery.indexOf("FROM")).trim();
-        List<String> previousColumnList = Arrays.stream(previousQueryColumns.split(",")).map(String::trim).toList();
-        List<String> currentColumnList = Arrays.stream(currentQueryColumns.split(",")).map(String::trim).toList();
+        List<String> previousColumnList = Arrays.stream(previousQueryColumns.split(","))
+                .map(pc -> {
+                    String columnName = pc.trim();
+                    if (pc.contains("as")){
+                        columnName = pc.substring(0, pc.indexOf("as")).trim();
+                    } else if (pc.contains("AS")) {
+                        columnName = pc.substring(0, pc.indexOf("AS")).trim();
+                    }
+                    if (columnName.contains(".")) {
+                        columnName = columnName.substring(columnName.indexOf(".")+1);
+                    }
+                    columnName = columnName.replaceAll(";", "");
+                    return columnName.trim();
+                }).toList();
+        List<String> currentColumnList = Arrays.stream(currentQueryColumns.split(","))
+                .map(cc -> {
+                    String columnName = cc.trim();
+                    if (cc.contains("as")){
+                        columnName = cc.substring(0, cc.indexOf("as")).trim();
+                    } else if (cc.contains("AS")) {
+                        columnName = cc.substring(0, cc.indexOf("AS")).trim();
+                    }
+                    columnName = columnName.replaceAll(";", "");
+                    if (columnName.contains(".")) {
+                        columnName = columnName.substring(columnName.indexOf(".")+1);
+                    }
+                    return columnName.trim();
+                }).toList();
+
         if (previousQueryColumns.contains("*")) {
             previousColumnList = dataDBService.getColumnNamesOfViews(previousTableList);
         }
