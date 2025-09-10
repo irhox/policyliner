@@ -1,14 +1,15 @@
+import {TableInfoDTO} from './tableInfo.dto';
 import {ViewAttributeDTO} from './viewAttribute.dto';
 
 export class CreatePolicyDTO {
   policyName?: string;
-  tableName?: string;
+  tables?: TableInfoDTO[];
   columns?: ViewAttributeDTO[];
 
-  public CreatePolicyDTO(obj?: any) {
+  constructor(obj?: any) {
     if (obj) {
       this.policyName = obj.policyName;
-      this.tableName = obj.tableName;
+      this.tables = obj.tables;
       this.columns = obj.columns;
     }
   }

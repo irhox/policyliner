@@ -1,0 +1,35 @@
+<div class="query-analyzer">
+  <h1>Analyze Query</h1>
+</div>
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="query-analyzer-form">
+  <mat-form-field appearance="fill" class="form-field">
+    <mat-label>Enter Query</mat-label>
+    <textarea matInput formControlName="query" rows="5"></textarea>
+  </mat-form-field>
+  <mat-form-field appearance="fill" class="form-field">
+    <mat-label>Enter User Id</mat-label>
+    <input matInput formControlName="userId"/>
+  </mat-form-field>
+  <mat-form-field appearance="fill" class="form-field">
+    <mat-label>Enter User Role</mat-label>
+    <input matInput formControlName="userRole"/>
+  </mat-form-field>
+  <mat-form-field appearance="fill" class="form-field">
+    <mat-label>Enter Comparator Type</mat-label>
+    <input matInput formControlName="comparatorType"/>
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
+    {{ loading ? 'Submitting...' : 'Submit' }}
+  </button>
+</form>
+
+@if (queryResponseDTO) {
+  <div class="query-analyzer">
+    <h2>Analysis Result: </h2>
+    <div>
+      <p>STATUS: {{queryResponseDTO.status}}</p>
+      <p>MESSAGE: {{queryResponseDTO.message}}</p>
+    </div>
+  </div>
+}

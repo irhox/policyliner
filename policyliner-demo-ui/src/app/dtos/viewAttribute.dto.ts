@@ -4,7 +4,7 @@ export class ViewAttributeDTO {
   tableColumnName?: string;
   viewColumnName?: string;
 
-  public ViewAttributeDTO(obj?: any) {
+  constructor(obj?: any) {
     if (obj) {
       this.functionArguments = obj.functionArguments;
       this.functionName = obj.functionName;
