@@ -5,6 +5,7 @@ import {QueryService} from '../../services/query.service';
 import {MatFormField, MatInput, MatLabel} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {QueryResponseDTO} from '../../dtos/queryResponse.dto';
+import {MatOption, MatSelect} from '@angular/material/select';
 
 @Component({
   selector: 'app-query-analyzer',
@@ -16,7 +17,11 @@ import {QueryResponseDTO} from '../../dtos/queryResponse.dto';
     MatInput,
     MatFormField,
     MatLabel,
-    MatButton
+    MatButton,
+    MatOption,
+    MatSelect,
+    MatOption,
+    MatOption
   ],
   templateUrl: './query-analyzer.html',
   styleUrl: './query-analyzer.scss'

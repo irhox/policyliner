@@ -14,9 +14,13 @@
     <mat-label>Enter User Role</mat-label>
     <input matInput formControlName="userRole"/>
   </mat-form-field>
-  <mat-form-field appearance="fill" class="form-field">
-    <mat-label>Enter Comparator Type</mat-label>
-    <input matInput formControlName="comparatorType"/>
+  <mat-form-field>
+    <mat-label>Comparator Type</mat-label>
+    <mat-select formControlName="comparatorType">
+      <mat-option value="CUSTOM">CUSTOM</mat-option>
+      <mat-option value="STRING">STRING</mat-option>
+      <mat-option value="LEVENSHTEIN_DISTANCE">LEVENSHTEIN_DISTANCE</mat-option>
+    </mat-select>
   </mat-form-field>
 
   <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
