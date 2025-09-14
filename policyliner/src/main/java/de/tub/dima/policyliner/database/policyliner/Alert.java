@@ -20,6 +20,7 @@ public class Alert extends PanacheEntityBase {
     public AlertType type;
     public Boolean isResolved;
     public LocalDateTime resolvedAt;
+    @Column(name = "createdat", nullable = false, updatable = false)
     @CreationTimestamp
     public LocalDateTime createdAt;
     @ManyToOne

@@ -2,6 +2,7 @@ package de.tub.dima.policyliner.database.data;
 
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.dto.CreatePolicyDTO;
+import de.tub.dima.policyliner.dto.TableInfoDTO;
 import de.tub.dima.policyliner.dto.ViewAttributeDTO;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.logging.Log;
@@ -112,21 +113,17 @@ public class DataDBService {
         Random random = new Random();
         String viewType = createPolicyDTO.getIsMaterializedView() ? "MATERIALIZED VIEW" : "VIEW";
         // check if a view with the same name already exists
-        if (!createPolicyDTO.getIsMaterializedView()) {
-            List<MaterializedView> materializedViews = getMaterializedViews();
-            if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
-                createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
-            }
+        List<MaterializedView> materializedViews = getMaterializedViews();
+        if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
+            createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
         }
-        // check if a materialized view with the same name already exists
-        else {
-            List<View> views = getViews();
-            if (views.stream().map(View::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
-                createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
-            }
+        List<View> views = getViews();
+        if (views.stream().map(View::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
+            createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
         }
 
-        StringBuilder policyCreationQuery = viewType.equals("MATERIALIZED VIEW") ? new StringBuilder("CREATE MATERIALIZED VIEW IF NOT EXISTS ") : new StringBuilder("CREATE OR REPLACE VIEW ");
+
+        StringBuilder policyCreationQuery = viewType.equals("MATERIALIZED VIEW") ? new StringBuilder("CREATE MATERIALIZED VIEW IF NOT EXISTS ") : new StringBuilder("CREATE VIEW ");
         policyCreationQuery.append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");
         for (ViewAttributeDTO attribute: createPolicyDTO.getColumns()) {
             if (attribute.getFunctionName() != null) {
@@ -146,7 +143,7 @@ public class DataDBService {
                 policyCreationQuery.append(viewColumnName);
 
             } else {
-                policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getTableColumnName());
+                policyCreationQuery.append(attribute.getTableColumnName()).append(" AS ").append(attribute.getViewColumnName() != null ? attribute.getViewColumnName() : attribute.getTableColumnName());
             }
             if (createPolicyDTO.getColumns().indexOf(attribute) < (createPolicyDTO.getColumns().size() - 1)) {
                 policyCreationQuery.append(", ");
@@ -157,13 +154,14 @@ public class DataDBService {
         if (createPolicyDTO.getTables().size() > 1) {
             createPolicyDTO.getTables().stream().skip(1).forEach(table -> {
                 policyCreationQuery.append(" JOIN ").append(table.getTableName());
+                TableInfoDTO secondTable = createPolicyDTO.getTables().get(tableListCounter.get());
                 policyCreationQuery.append(" ON ")
                         .append(table.getTableName())
                         .append(".")
                         .append(table.getForeignKey())
                         .append(" = ")
                         .append(createPolicyDTO.getTables().get(tableListCounter.get()).getTableName())
-                        .append(".").append(createPolicyDTO.getTables().get(tableListCounter.get()).getPrimaryKey());
+                        .append(".").append(secondTable.getPrimaryKey() != null ? secondTable.getPrimaryKey() : secondTable.getForeignKey());
 
                 tableListCounter.getAndIncrement();
             });

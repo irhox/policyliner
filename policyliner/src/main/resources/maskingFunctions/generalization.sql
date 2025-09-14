@@ -27,3 +27,17 @@ BEGIN
         END CASE;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION generalize_primarydiagnosiscode(code TEXT)
+    RETURNS TEXT AS $$
+BEGIN
+    -- If string length <= 2, return as-is
+    IF length(code) <= 2 THEN
+        RETURN code;
+    END IF;
+
+    -- Keep first 2 chars, replace the rest with 'X'
+    RETURN substring(code FROM 1 FOR 2) ||
+           repeat('X', length(code) - 2);
+END;
+$$ LANGUAGE plpgsql;

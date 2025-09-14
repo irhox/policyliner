@@ -12,10 +12,7 @@ import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -74,6 +71,7 @@ public class PolicyService {
         }
         newPolicy.policy = policy;
         newPolicy.status = PolicyStatus.ACTIVE;
+        newPolicy.allowedUserRole = createPolicyDTO.getUserRole();
         policyRepository.persist(newPolicy);
         return convertToPolicyDTO(newPolicy);
     }
@@ -100,13 +98,25 @@ public class PolicyService {
         disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
 
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
+        int whereIndex = disclosurePolicy.contains("where") ? disclosurePolicy.indexOf("where") : disclosurePolicy.length();
         final String tables = disclosurePolicy.contains("with mask on")
                 ? disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, disclosurePolicy.indexOf("with"))
-                : disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, disclosurePolicy.indexOf("where"));
+                : disclosurePolicy.substring(disclosurePolicy.indexOf("from")+4, whereIndex);
 
-        final String dataMasks = disclosurePolicy.substring(disclosurePolicy.indexOf("with mask on")+12, disclosurePolicy.indexOf("where"));
+        final String dataMasks = disclosurePolicy.substring(disclosurePolicy.indexOf("with mask on")+12, whereIndex);
         final String conditions = disclosurePolicy.substring(disclosurePolicy.indexOf("where")+5);
-        final List<String> conditionsList = Stream.of(conditions.split("and")).map(String::trim).toList();
+        List<String> conditionsList = Stream.of(conditions.split("and")).map(String::trim).toList();
+        final Optional<String> userConditionOp = conditionsList.stream().filter(c -> c.contains("$user.role")).findFirst();
+        if (userConditionOp.isPresent()) {
+            conditionsList = conditionsList.stream().filter(c -> !c.contains("$user.role")).toList();
+            disclosurePolicyInfo.setUserRole(
+                    userConditionOp.get()
+                            .substring(
+                                    userConditionOp.get().indexOf("$user.role")+10)
+                            .replaceAll("=", "")
+                            .replaceAll("'", "")
+                            .trim());
+        }
 
         List<String> attributeList = Stream.of(attributes.split(",")).map(String::trim).toList();
         List<String> tableNames = Stream.of(tables.split(",")).map(String::trim).toList();
@@ -114,8 +124,9 @@ public class PolicyService {
             TableInfoDTO tableInfo = new TableInfoDTO(tableNames.getFirst(), null, null);
             disclosurePolicyInfo.setTables(List.of(tableInfo));
         } else {
+            List<String> finalConditionsList = conditionsList;
             List<TableInfoDTO> tableList = tableNames.stream().map(name -> {
-                List<String> tableConditionsList = conditionsList.stream().filter(c -> c.contains(name)).toList();
+                List<String> tableConditionsList = finalConditionsList.stream().filter(c -> c.contains(name)).toList();
                 final TableInfoDTO tableInfo = new TableInfoDTO(name.trim(), null, null);
                 tableConditionsList.forEach(condition -> {
                     int beginIndex = condition.indexOf(name + ".") + name.length()+1;
@@ -143,7 +154,7 @@ public class PolicyService {
             ViewAttributeDTO result = new ViewAttributeDTO();
             result.setFunctionName(maskingFunction);
             result.setTableColumnName(attribute);
-            result.setViewColumnName(attribute);
+            result.setViewColumnName(attribute.replace(".", "_").trim());
             if (!arguments.isEmpty() && !arguments.getFirst().isEmpty()) {
                 result.setFunctionArguments(arguments);
             }
@@ -157,7 +168,7 @@ public class PolicyService {
                 .forEach(col -> {
                     ViewAttributeDTO viewAttributeDTO = new ViewAttributeDTO();
                     viewAttributeDTO.setTableColumnName(col.trim());
-                    viewAttributeDTO.setViewColumnName(col.trim());
+                    viewAttributeDTO.setViewColumnName(col.replace(".", "_").trim());
                     dataMaskObj.add(viewAttributeDTO);
                 });
 

@@ -157,8 +157,6 @@ public class QueryService {
                     newAlert.type = AlertType.QUERY;
                     newAlert.isResolved = false;
                     newAlert.persist();
-
-
                 } else {
                     // create an alert for less than 3 similar queries
                     disclosureQuery.status = QueryStatus.SUSPECT;

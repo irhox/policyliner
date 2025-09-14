@@ -49,4 +49,13 @@ public class ViewAttributeDTO {
     public void setViewColumnName(String viewColumnName) {
         this.viewColumnName = viewColumnName;
     }
+
+    @Override
+    public String toString() {
+        return "ViewAttributeDTO{" +
+                "functionArguments=" + functionArguments +
+                ", functionName=" + functionName +
+                ", tableColumnName=" + tableColumnName +
+                ", viewColumnName=" + viewColumnName + '}';
+    }
 }

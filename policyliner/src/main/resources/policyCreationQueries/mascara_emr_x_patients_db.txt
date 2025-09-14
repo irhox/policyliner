@@ -1,0 +1,106 @@
+1. Medical Staff Policy
+disclose
+    patients.patientid,
+    patientgender,
+    patientdateofbirth,
+    admissions.admissionid,
+    admissionstartdate,
+    admissionenddate,
+    primarydiagnosiscode,
+    primarydiagnosisdescription,
+    labname,
+    labvalue,
+    labunits,
+    labdatetime
+    from patients, admissions, diagnosis, labs
+    with mask on patientgender using randomized_response_patientgender()
+    with mask on to_date(to_char(patientdateofbirth, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('YEAR')
+    with mask on to_date(to_char(labdatetime, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('YEAR')
+    with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    where patients.patientid = admissions.patientid
+    and admissions.admissionid = diagnosis.admissionid
+    and admissions.admissionid = labs.admissionid
+    and $user.role = 'medical_staff'
+
+2. Front Desk Staff
+disclose
+    patients.patientid,
+    patientgender,
+    patientmaritalstatus,
+    patientlanguage,
+    admissions.admissionid,
+    admissionstartdate,
+    admissionenddate
+    from patients, admissions
+    with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    with mask on patientgender using randomized_response_patientgender()
+    with mask on patientmaritalstatus using randomized_response_patientmaritalstatus()
+    with mask on patientlanguage using randomized_response_patientlanguage()
+    where patients.patientid = admissions.patientid
+    and $user.role = 'front_desk_staff'
+
+3. Lab Technician
+disclose
+    patientid,
+    admissionid,
+    labname,
+    labvalue,
+    labunits,
+    labdatetime
+    from labs
+    with mask on patientid using suppress()
+    with mask on labname using generalize_labname()
+    with mask on to_date(to_char(labdatetime, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    where $user.role = 'lab_technician'
+
+4. Public Health Researcher
+disclose
+    patients.patientid,
+    patientlanguage,
+    patientpopulationpercentagebelowpoverty,
+    admissions.admissionid,
+    primarydiagnosiscode
+    from patients, admissions, diagnosis
+    with mask on patients.patientid using suppress()
+    with mask on admissions.admissionid using suppress()
+    with mask on patientlanguage using randomized_response_patientlanguage()
+    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
+    where patients.patientid = admissions.patientid
+    and admissions.admissionid = diagnosis.admissionid
+    and $user.role = 'public_health_researcher'
+
+5. Audit Officer
+disclose
+    patients.patientid,
+    admissions.admissionid,
+    primarydiagnosiscode,
+    labname
+    from patients, admissions, diagnosis, labs
+    with mask on patients.patientid using generalize_primarydiagnosiscode()
+    with mask on admissions.admissionid using bucketize(10)
+    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
+    with mask on labname using generalize_labname()
+    where patients.patientid = admissions.patientid
+    and admissions.admissionid = diagnosis.admissionid
+    and admissions.admissionid = labs.admissionid
+    and $user.role = 'audit_officer'
+
+6. Specialist Doctor
+disclose
+    patients.patientid,
+    admissions.admissionid,
+    admissionstartdate,
+    admissionenddate,
+    primarydiagnosiscode,
+    primarydiagnosisdescription
+    from patients, admissions, diagnosis
+    with mask on patients.patientid using generalize_primarydiagnosiscode()
+    with mask on admissions.admissionid using bucketize(10)
+    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
+    with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
+    where patients.patientid = admissions.patientid
+    and admissions.admissionid = diagnosis.admissionid
+    and $user.role = 'specialist_doctor'

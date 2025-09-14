@@ -25,6 +25,7 @@ public class Policy extends PanacheEntityBase {
     @Enumerated(EnumType.STRING)
     @Column(name="status")
     public PolicyStatus status;
+    public String allowedUserRole;
     @OneToMany(mappedBy = "policy")
     public List<Alert> alerts;
 

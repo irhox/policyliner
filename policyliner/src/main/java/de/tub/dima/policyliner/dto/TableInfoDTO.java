@@ -36,4 +36,13 @@ public class TableInfoDTO {
     public void setForeignKey(String foreignKey) {
         this.foreignKey = foreignKey;
     }
+
+    @Override
+    public String toString() {
+        return "TableInfoDTO{" +
+                "tableName='" + tableName + '\n' +
+                ", primaryKey='" + primaryKey + '\n' +
+                ", foreignKey='" + foreignKey + '\n' +
+                '}';
+    }
 }
