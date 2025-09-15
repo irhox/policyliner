@@ -104,3 +104,30 @@ disclose
     where patients.patientid = admissions.patientid
     and admissions.admissionid = diagnosis.admissionid
     and $user.role = 'specialist_doctor'
+
+7. Patient Demographics
+disclose
+    patientid,
+    patientgender,
+    patientdateofbirth,
+    patientrace,
+    patientmaritalstatus,
+    patientlanguage
+    from patients
+    with mask on patientgender using randomized_response_patientgender()
+    with mask on patientmaritalstatus using randomized_response_patientmaritalstatus()
+    with mask on patientlanguage using randomized_response_patientlanguage()
+    with mask on patientrace using randomized_response_patientrace()
+    where $user.role = 'patient_demographics'
+
+8. Diagnoses per Admission
+disclose
+    admissions.admissionid,
+    admissions.patientid,
+    primarydiagnosiscode,
+    primarydiagnosisdescription
+    from admissions, diagnosis
+    with mask on admissions.patientid using generalize_primarydiagnosiscode()
+    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
+    where admissions.admissionid = diagnosis.admissionid
+    and $user.role = 'diagnoses_per_admission'
