@@ -1,5 +1,6 @@
 package de.tub.dima.policyliner.database.policyliner;
 
+import de.tub.dima.policyliner.constants.QueryInspectionStatus;
 import de.tub.dima.policyliner.constants.QueryStatus;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
@@ -25,8 +26,15 @@ public class DisclosureQuery extends PanacheEntityBase {
     public LocalDateTime createdAt;
     @Enumerated(EnumType.STRING)
     public QueryStatus status;
+    @Enumerated(EnumType.STRING)
+    public QueryInspectionStatus inspectionStatus = QueryInspectionStatus.NEW;
     public String message;
-    @OneToMany(mappedBy = "query")
+    @ManyToMany
+    @JoinTable(
+            name = "query_alert",
+            joinColumns = @JoinColumn(name = "query_id"),
+            inverseJoinColumns = @JoinColumn(name = "alert_id")
+    )
     public List<Alert> alerts;
 
     public void setId(String id) {

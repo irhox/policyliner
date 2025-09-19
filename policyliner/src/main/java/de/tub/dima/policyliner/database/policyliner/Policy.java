@@ -26,7 +26,12 @@ public class Policy extends PanacheEntityBase {
     @Column(name="status")
     public PolicyStatus status;
     public String allowedUserRole;
-    @OneToMany(mappedBy = "policy")
+    @ManyToMany
+    @JoinTable(
+            name = "policy_alert",
+            joinColumns = @JoinColumn(name = "policy_id"),
+            inverseJoinColumns = @JoinColumn(name = "alert_id")
+    )
     public List<Alert> alerts;
 
     public void setId(String id) {

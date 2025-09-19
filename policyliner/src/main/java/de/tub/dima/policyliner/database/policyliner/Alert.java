@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "alert")
@@ -15,18 +16,21 @@ public class Alert extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     public String id;
+    @Column(name="message", columnDefinition="TEXT")
     public String message;
+    @Enumerated(EnumType.STRING)
     public AlertSeverity severity;
+    @Enumerated(EnumType.STRING)
     public AlertType type;
-    public Boolean isResolved;
+    public Boolean isResolved = false;
     public LocalDateTime resolvedAt;
     @Column(name = "createdat", nullable = false, updatable = false)
     @CreationTimestamp
     public LocalDateTime createdAt;
-    @ManyToOne
-    public Policy policy;
-    @ManyToOne
-    public DisclosureQuery query;
+    @ManyToMany(mappedBy = "alerts")
+    public List<Policy> policies;
+    @ManyToMany(mappedBy = "alerts")
+    public List<DisclosureQuery> queries;
 
     public void setId(String id) {
         this.id = id;

@@ -25,4 +25,8 @@ public class DisclosureQueryRepository implements PanacheRepository<DisclosureQu
     public List<DisclosureQuery> findQueriesBetween(LocalDateTime from, LocalDateTime to) {
         return list(" createdAt >= ?1 and createdAt <= ?2", from, to);
     }
+
+    public List<DisclosureQuery> findNewQueriesByUserId(String userId) {
+        return list("user.id = ?1 and inspectionStatus = 'NEW'", userId);
+    }
 }

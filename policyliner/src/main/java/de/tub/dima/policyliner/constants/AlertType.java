@@ -1,6 +1,7 @@
 package de.tub.dima.policyliner.constants;
 
 public enum AlertType {
-    QUERY,
+    ONLINE_QUERY,
+    OFFLINE_QUERY,
     POLICY,
 }

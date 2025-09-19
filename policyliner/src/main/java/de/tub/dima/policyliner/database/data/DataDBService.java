@@ -2,6 +2,7 @@ package de.tub.dima.policyliner.database.data;
 
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.dto.CreatePolicyDTO;
+import de.tub.dima.policyliner.dto.QueryResultsComparisonDTO;
 import de.tub.dima.policyliner.dto.TableInfoDTO;
 import de.tub.dima.policyliner.dto.ViewAttributeDTO;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -12,11 +13,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class DataDBService {
@@ -52,7 +51,7 @@ public class DataDBService {
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public List<String> getColumnNamesOfViews(List<String> viewNameList) {
+    public Set<String> getColumnNamesOfViews(Set<String> viewNameSet) {
         String nativeQueryString = "SELECT att.attname as column_name FROM pg_catalog.pg_attribute att join pg_catalog.pg_class mv ON mv.oid = att.attrelid" +
                             " where (mv.relkind = 'm' OR mv.relkind = 'v')" +
                             " AND mv.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')" +
@@ -61,11 +60,11 @@ public class DataDBService {
                             " AND mv.relname in :viewNameList;";
 
         Query nativeQuery = em.createNativeQuery(nativeQueryString, List.class);
-        nativeQuery.setParameter("viewNameList", viewNameList);
+        nativeQuery.setParameter("viewNameList", viewNameSet);
         List<List<Object>> resultList = nativeQuery.getResultList();
         return resultList.stream()
                 .map(o -> o.getFirst().toString())
-                .toList();
+                .collect(Collectors.toSet());
 
     }
 
@@ -93,7 +92,7 @@ public class DataDBService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public Map<String, String> createMaterializedViewFromExistingPolicy(Policy policy){
         final String currentPolicyQuery = policy.policy;
-        String newPolicyQuery = currentPolicyQuery.replace("CREATE OR REPLACE VIEW", "CREATE MATERIALIZED VIEW IF NOT EXISTS");
+        String newPolicyQuery = currentPolicyQuery.replace("VIEW", "MATERIALIZED VIEW");
         String materializedViewName = policy.viewName + "_materialized";
         List <MaterializedView> materializedViews = getMaterializedViews();
         if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(materializedViewName)){
@@ -172,6 +171,34 @@ public class DataDBService {
         Log.info("Policy " + createPolicyDTO.getPolicyName() + " created successfully");
 
         return policyQuery.unwrap(org.hibernate.query.Query.class).getQueryString();
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public QueryResultsComparisonDTO compareWhereClauseResults(String query1, String query2) {
+        query1 = query1.replace(";", "");
+        query2 = query2.replace(";", "");
+        String differenceQuery = """
+                SELECT COUNT(*) as differenceCount FROM(
+                    (%s) EXCEPT ALL (%s)
+                );
+                """;
+
+        String differenceQueryString1 = String.format(differenceQuery, query1, query2);
+        String differenceQueryString2 = String.format(differenceQuery, query2, query1);
+
+        Query differenceQuery1 = em.createNativeQuery(differenceQueryString1);
+        Query differenceQuery2 = em.createNativeQuery(differenceQueryString2);
+
+        Query query1Count = em.createNativeQuery("SELECT COUNT(*) FROM (" + query1 + ")");
+        Query query2Count = em.createNativeQuery("SELECT COUNT(*) FROM (" + query2 + ")");
+
+        long differenceCount1 = (long) differenceQuery1.getResultList().getFirst();
+        long differenceCount2 = (long) differenceQuery2.getResultList().getFirst();
+
+        long query1CountResult = (long) query1Count.getResultList().getFirst();
+        long query2CountResult = (long) query2Count.getResultList().getFirst();
+
+        return new QueryResultsComparisonDTO(differenceCount1, differenceCount2, query1CountResult, query2CountResult);
     }
 
 
