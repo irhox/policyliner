@@ -1,4 +1,4 @@
-import {PolicyStatus} from './policyStatus.enum';
+import {PolicyStatus} from '../enums/policyStatus.enum';
 
 export class PolicyDTO {
   id?: string;

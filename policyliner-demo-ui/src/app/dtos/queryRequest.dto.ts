@@ -1,4 +1,4 @@
-import {QueryComparatorType} from './queryComparatorType.enum';
+import {QueryComparatorType} from '../enums/queryComparatorType.enum';
 
 export class QueryRequestDTO {
   query?: string;

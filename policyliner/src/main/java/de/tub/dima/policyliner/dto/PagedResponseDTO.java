@@ -4,12 +4,12 @@ import java.util.List;
 
 public class PagedResponseDTO<T> {
     private List<T> elements;
-    private Integer totalElements;
+    private Long totalElements;
     private Integer totalPages;
     private Integer currentPage;
     private Integer pageSize;
 
-    public PagedResponseDTO(List<T> elements, Integer totalElements, Integer totalPages, Integer currentPage, Integer pageSize) {
+    public PagedResponseDTO(List<T> elements, Long totalElements, Integer totalPages, Integer currentPage, Integer pageSize) {
         this.elements = elements;
         this.totalElements = totalElements;
         this.totalPages = totalPages;
@@ -28,11 +28,11 @@ public class PagedResponseDTO<T> {
         this.elements = elements;
     }
 
-    public Integer getTotalElements() {
+    public Long getTotalElements() {
         return totalElements;
     }
 
-    public void setTotalElements(Integer totalElements) {
+    public void setTotalElements(Long totalElements) {
         this.totalElements = totalElements;
     }
 

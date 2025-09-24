@@ -46,7 +46,7 @@ public class QueryService {
         this.queryParserService = queryParserService;
     }
 
-    // Queries of each user are run and the results are compared to each other.
+    // Queries of each user are run, and the results are compared to each other.
     // Based on results similarity, there are alerts created.
     @Scheduled(every = "{query.evaluation.interval}")
     @RunOnVirtualThread
@@ -284,7 +284,7 @@ public class QueryService {
                 Page.of(searchDTO.getPageNumber(), searchDTO.getPageSize())
         ).list().stream().map(this::convertToQueryResponseDTO).toList();
 
-        return createPagedResponseDTO(queryList, searchDTO);
+        return createPagedResponseDTO(queryList, searchDTO, disclosurePanacheQuery.count());
     }
 
 
@@ -359,13 +359,13 @@ public class QueryService {
         return (differentColumnRatio + differentTableRatio + differentWhereClauseRatio) / 3;
     }
 
-    private PagedResponseDTO<QueryResponseDTO> createPagedResponseDTO(List<QueryResponseDTO> queryList, SearchDTO searchDTO) {
+    private PagedResponseDTO<QueryResponseDTO> createPagedResponseDTO(List<QueryResponseDTO> queryList, SearchDTO searchDTO, Long totalElements) {
         PagedResponseDTO<QueryResponseDTO> page = new PagedResponseDTO<>();
         page.setCurrentPage(searchDTO.getPageNumber());
         page.setPageSize(searchDTO.getPageSize());
         page.setElements(queryList);
-        page.setTotalElements(queryList.size());
-        page.setTotalPages(queryList.size()/searchDTO.getPageSize());
+        page.setTotalElements(totalElements);
+        page.setTotalPages((int) (totalElements/searchDTO.getPageSize()));
 
         return page;
     }

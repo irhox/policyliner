@@ -1,4 +1,4 @@
-import {QueryStatus} from './queryStatus.enum';
+import {QueryStatus} from '../enums/queryStatus.enum';
 
 export class QueryResponseDTO {
   id?: string;

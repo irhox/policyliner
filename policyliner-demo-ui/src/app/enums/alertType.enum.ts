@@ -1,0 +1,5 @@
+export enum AlertType {
+  OFFLINE_QUERY = 'OFFLINE_QUERY',
+  ONLINE_QUERY = 'ONLINE_QUERY',
+  POLICY = 'POLICY'
+}

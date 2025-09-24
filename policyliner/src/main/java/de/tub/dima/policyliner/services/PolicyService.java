@@ -57,7 +57,7 @@ public class PolicyService {
                 .map(this::convertToPolicyDTO)
                 .toList();
 
-        return createPagedResponseDTO(policyList, searchDTO);
+        return createPagedResponseDTO(policyList, searchDTO, policyQuery.count());
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -178,13 +178,13 @@ public class PolicyService {
         return disclosurePolicyInfo;
     }
 
-    private PagedResponseDTO<PolicyDTO> createPagedResponseDTO(List<PolicyDTO> policies, SearchDTO searchDTO) {
+    private PagedResponseDTO<PolicyDTO> createPagedResponseDTO(List<PolicyDTO> policies, SearchDTO searchDTO, Long totalElements) {
         PagedResponseDTO<PolicyDTO> page = new PagedResponseDTO<>();
         page.setCurrentPage(searchDTO.getPageNumber());
         page.setPageSize(searchDTO.getPageSize());
         page.setElements(policies);
-        page.setTotalElements(policies.size());
-        page.setTotalPages(policies.size()/searchDTO.getPageSize());
+        page.setTotalElements(totalElements);
+        page.setTotalPages((int) (totalElements/searchDTO.getPageSize()));
 
         return page;
     }

@@ -26,7 +26,7 @@ public class AlertService {
                 Page.of(searchDTO.getPageNumber(), searchDTO.getPageSize())
         ).list().stream().map(this::convertToAlertDTO).toList();
 
-        return createPagedResponseDTO(alertList, searchDTO);
+        return createPagedResponseDTO(alertList, searchDTO, alertQuery.count());
     }
 
     public AlertDTO createAlert(AlertDTO alertDTO) {
@@ -38,19 +38,19 @@ public class AlertService {
     }
 
 
-    private PagedResponseDTO<AlertDTO> createPagedResponseDTO(List<AlertDTO> alertList, SearchDTO searchDTO) {
+    private PagedResponseDTO<AlertDTO> createPagedResponseDTO(List<AlertDTO> alertList, SearchDTO searchDTO, long totalElements) {
         PagedResponseDTO<AlertDTO> page = new PagedResponseDTO<>();
         page.setCurrentPage(searchDTO.getPageNumber());
         page.setPageSize(searchDTO.getPageSize());
         page.setElements(alertList);
-        page.setTotalElements(alertList.size());
-        page.setTotalPages(alertList.size()/searchDTO.getPageSize());
+        page.setTotalElements(totalElements);
+        page.setTotalPages((int) Math.ceil((double) totalElements /searchDTO.getPageSize()));
 
         return page;
     }
 
     private AlertDTO convertToAlertDTO(Alert alert) {
-        return new AlertDTO(alert.getId(), alert.message, alert.severity, alert.type, alert.isResolved);
+        return new AlertDTO(alert.getId(), alert.message, alert.severity, alert.type, alert.isResolved, alert.createdAt);
     }
 
     private Alert convertToAlert(AlertDTO alertDTO) {
