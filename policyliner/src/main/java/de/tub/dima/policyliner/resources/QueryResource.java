@@ -6,10 +6,7 @@ import de.tub.dima.policyliner.dto.QueryResponseDTO;
 import de.tub.dima.policyliner.dto.SearchDTO;
 import de.tub.dima.policyliner.services.QueryService;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/query")
@@ -36,10 +33,16 @@ public class QueryResource {
         return queryService.analyzeQuery(disclosureQueryDTO);
     }
 
-    @GET
+    @POST
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
     public PagedResponseDTO<QueryResponseDTO> searchQueries(SearchDTO searchDTO) {
         return queryService.searchQueries(searchDTO);
+    }
+
+    @GET
+    @Path("/{queryId}")
+    public QueryResponseDTO getDisclosureQueryById(@PathParam("queryId") String queryId) {
+        return queryService.getQueryById(queryId);
     }
 }

@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild} from '@angular/core';
 import {
   MatCard,
   MatCardActions,
@@ -8,14 +8,15 @@ import {
   MatCardTitle
 } from '@angular/material/card';
 import {MatPaginator} from '@angular/material/paginator';
-import {MatButton} from '@angular/material/button';
-import {Observable} from 'rxjs';
+import {MatButton, MatFabButton} from '@angular/material/button';
 import {AlertDTO} from '../../dtos/alert.dto';
-import {MatTableDataSource} from '@angular/material/table';
 import {AlertService} from '../../services/alert.service';
 import {SearchDTO} from '../../dtos/search.dto';
 import {HttpClient} from '@angular/common/http';
-import {AsyncPipe, DatePipe} from '@angular/common';
+import {DatePipe} from '@angular/common';
+import {RouterLink} from '@angular/router';
+import {MatFormField, MatInput, MatLabel} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
   selector: 'app-alerts',
@@ -28,21 +29,24 @@ import {AsyncPipe, DatePipe} from '@angular/common';
     MatCardActions,
     MatPaginator,
     MatButton,
-    AsyncPipe,
     DatePipe,
+    RouterLink,
+    MatInput,
+    MatLabel,
+    MatFormField,
+    MatIcon,
+    MatFabButton,
   ],
   templateUrl: './alerts.html',
+  standalone: true,
   styleUrl: './alerts.scss'
 })
-export class Alerts {
+export class Alerts implements OnInit, AfterViewInit {
 
-  @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator();
-  alertsObservable: Observable<AlertDTO[]> = new Observable<AlertDTO[]>();
-  dataSource: MatTableDataSource<AlertDTO> = new MatTableDataSource<AlertDTO>();
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  alerts: AlertDTO[] = [];
   private alertService: AlertService;
   filter: string = "";
-  sortOrder: string = "desc";
-  sortColumn: string = "id";
   pageSize: number = 10;
   pageNumber: number = 0;
   booleanFilter: boolean = false;
@@ -57,25 +61,45 @@ export class Alerts {
   }
 
   ngOnInit() {
+    this.loadAlerts();
+  }
+
+  ngAfterViewInit() {
+    this.paginator.page.subscribe(() => {
+      this.pageNumber = this.paginator.pageIndex;
+      this.pageSize = this.paginator.pageSize;
+      this.loadAlerts();
+    });
+  }
+
+  resolveAlert(alertId: string | undefined) {
     this.changeDetectorRef.detectChanges();
-    this.alertService.searchAlerts(
-      new SearchDTO({
-        filter: this.filter,
-        booleanFilter: this.booleanFilter,
-        pageNumber: this.pageNumber,
-        pageSize: this.pageSize,
-        sortColumn: this.sortColumn,
-        sortOrder: this.sortOrder}))
-      .subscribe(response => {
-          this.dataSource.data = response.elements;
-          this.pageNumber = response.currentPage;
-          this.pageSize = response.pageSize;
-          this.totalElements = response.totalElements;
-          this.totalPages = response.totalPages;
-          this.dataSource.paginator = this.paginator;
-          this.alertsObservable = this.dataSource.connect();
-    })
+    if (alertId) this.alertService.resolveAlert(alertId).subscribe(() =>{window.location.reload()} );
+  }
+
+  filterAlerts(filter: string) {
+    this.filter = filter;
+    this.pageNumber = 0;
+    this.loadAlerts();
   }
 
 
+  private loadAlerts() {
+    let searchDTO = new SearchDTO({
+      filter: this.filter,
+      booleanFilter: this.booleanFilter,
+      pageNumber: this.pageNumber,
+      pageSize: this.pageSize,
+      sortColumn: "",
+      sortOrder: ""
+    });
+
+    this.alertService.searchAlerts(
+      searchDTO)
+      .subscribe(response => {
+        this.alerts = response.elements;
+        this.totalElements = response.totalElements;
+        this.totalPages = response.totalPages;
+      })
+  }
 }

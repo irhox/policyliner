@@ -1,9 +1,15 @@
 .option-button {
-  margin: 1em;
-  padding: 1em;
+  padding: 2em;
+}
+.option-button:hover {
+  background-color: darkgray;
+  color: white;
 }
 
 .side-bar-div {
   display: flex;
   flex-direction: column;
+  background-color: lightgray;
+  color: white;
+  height: 100vh;
 }

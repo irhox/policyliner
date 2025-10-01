@@ -51,6 +51,7 @@ public class QueryService {
     @Scheduled(every = "{query.evaluation.interval}")
     @RunOnVirtualThread
     public void offlineQueryAnalysis() {
+        Log.info("Offline Query Analysis started.");
         List<User> users = userRepository.listAll();
         for (User user : users) {
             List<DisclosureQuery> userQueries = disclosureQueryRepository.findNewQueriesByUserId(user.id);
@@ -58,6 +59,7 @@ public class QueryService {
                 compareUserQueryResults(i, userQueries);
             }
         }
+        Log.info("Offline Query Analysis finished.");
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -90,13 +92,14 @@ public class QueryService {
                 Log.info("Queries are equal: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
 
                 Alert newAlert = new Alert();
-                newAlert.queries = List.of(currentDisclosureQuery, prevDisclosureQuery);
                 newAlert.type = AlertType.OFFLINE_QUERY;
                 newAlert.severity = AlertSeverity.SEVERE;
                 newAlert.message = """
                         Query (%s) and (%s) of User (%s) have equal results. Suspect of Data Reconstruction Attack.
                         """.formatted(currentDisclosureQuery.query, currentDisclosureQuery.query, currentDisclosureQuery.user.id);
                 newAlert.persist();
+                currentDisclosureQuery.alerts.add(newAlert);
+                prevDisclosureQuery.alerts.add(newAlert);
 
             } else if (totalCountSum - diffCountSum == 0) {
                 Log.info("Queries are totally different: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
@@ -110,19 +113,19 @@ public class QueryService {
                     Log.info("Queries are similar: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
 
                     Alert newAlert = new Alert();
-                    newAlert.queries = List.of(currentDisclosureQuery, prevDisclosureQuery);
                     newAlert.type = AlertType.OFFLINE_QUERY;
                     newAlert.severity = AlertSeverity.WARNING;
                     newAlert.message = """
                         Query (%s) and (%s) of User (%s) have similar results with ratio: %s. Suspect of Data Reconstruction Attack.
                         """.formatted(currentDisclosureQuery.query, currentDisclosureQuery.query, currentDisclosureQuery.user.id, resultsRatio);
                     newAlert.persist();
+                    currentDisclosureQuery.alerts.add(newAlert);
+                    prevDisclosureQuery.alerts.add(newAlert);
                 }
             }
         }
         if (isApproved && wasSuspect) {
             Alert newAlert = new Alert();
-            newAlert.queries = List.of(currentDisclosureQuery);
             newAlert.message = """
                     Query (%s) of User (%s) was flagged as %s by the online query analysis.
                     Offline Query Analysis has found out that this was a false positive and the query has been approved.
@@ -130,7 +133,7 @@ public class QueryService {
             newAlert.severity = AlertSeverity.INFO;
             newAlert.type = AlertType.OFFLINE_QUERY;
             newAlert.persist();
-
+            currentDisclosureQuery.alerts.add(newAlert);
             currentDisclosureQuery.status = QueryStatus.APPROVED;
         }
         currentDisclosureQuery.inspectionStatus = QueryInspectionStatus.INSPECTED;
@@ -209,12 +212,12 @@ public class QueryService {
                     disclosureQuery.status = QueryStatus.DENIED;
                     // create alert for denied query
                     Alert newAlert = new Alert();
-                    newAlert.queries = List.of(disclosureQuery);
                     newAlert.message = disclosureQuery.message;
                     newAlert.severity = AlertSeverity.SEVERE;
                     newAlert.type = AlertType.ONLINE_QUERY;
                     newAlert.isResolved = false;
                     newAlert.persist();
+                    disclosureQuery.alerts.add(newAlert);
                 } else if (similarQueries.size() >= 3) {
                     Log.info(similarQueries.size() + " similar queries found by user: " + disclosureQueryDTO.getUserId());
                     String tablesString = disclosureQueryDTO.getQuery()
@@ -248,24 +251,30 @@ public class QueryService {
                     Log.info("Changed query of user: " + disclosureQueryDTO.getUserId() + " to: " + newQuery + ".");
                     // create an alert for a modified user
                     Alert newAlert = new Alert();
-                    newAlert.queries = List.of(disclosureQuery);
                     newAlert.message = disclosureQuery.message;
                     newAlert.severity = AlertSeverity.WARNING;
                     newAlert.type = AlertType.ONLINE_QUERY;
                     newAlert.isResolved = false;
                     newAlert.persist();
+                    if (disclosureQuery.alerts == null) {
+                        disclosureQuery.alerts = new ArrayList<>();
+                    }
+                    disclosureQuery.alerts.add(newAlert);
                 } else {
                     // create an alert for less than 3 similar queries
                     disclosureQuery.status = QueryStatus.SUSPECT;
                     disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Suspect for Data Reconstruction Attack";
                     // create alert for a suspect user
                     Alert newAlert = new Alert();
-                    newAlert.queries = List.of(disclosureQuery);
                     newAlert.message = disclosureQuery.message;
                     newAlert.severity = AlertSeverity.WARNING;
                     newAlert.type = AlertType.ONLINE_QUERY;
                     newAlert.isResolved = false;
                     newAlert.persist();
+                    if (disclosureQuery.alerts == null) {
+                        disclosureQuery.alerts = new ArrayList<>();
+                    }
+                    disclosureQuery.alerts.add(newAlert);
                 }
             } else { // TODO: adjust for other types of attacks
                 disclosureQuery.status = QueryStatus.APPROVED;
@@ -277,14 +286,20 @@ public class QueryService {
         return convertToQueryResponseDTO(disclosureQuery);
     }
 
-    // TODO: Implement sorting and filtering
+    // TODO: Implement sorting
     public PagedResponseDTO<QueryResponseDTO> searchQueries(SearchDTO searchDTO) {
-        PanacheQuery<DisclosureQuery> disclosurePanacheQuery = disclosureQueryRepository.findAll();
+        PanacheQuery<DisclosureQuery> disclosurePanacheQuery = disclosureQueryRepository.findFilteredQueries(searchDTO.getFilter());
+
         List<QueryResponseDTO> queryList = disclosurePanacheQuery.page(
                 Page.of(searchDTO.getPageNumber(), searchDTO.getPageSize())
         ).list().stream().map(this::convertToQueryResponseDTO).toList();
 
         return createPagedResponseDTO(queryList, searchDTO, disclosurePanacheQuery.count());
+    }
+
+    public QueryResponseDTO getQueryById(String queryId) {
+        DisclosureQuery disclosureQuery = disclosureQueryRepository.findById(queryId);
+        return convertToQueryResponseDTO(disclosureQuery);
     }
 
 
@@ -371,6 +386,14 @@ public class QueryService {
     }
 
     private QueryResponseDTO convertToQueryResponseDTO(DisclosureQuery disclosureQuery) {
-        return new QueryResponseDTO(disclosureQuery.getId(), disclosureQuery.query, disclosureQuery.status, disclosureQuery.message);
+        return new QueryResponseDTO(
+                disclosureQuery.getId(),
+                disclosureQuery.user.id,
+                disclosureQuery.query,
+                disclosureQuery.status,
+                disclosureQuery.inspectionStatus,
+                disclosureQuery.message,
+                disclosureQuery.alerts == null || disclosureQuery.alerts.isEmpty() ? List.of() : disclosureQuery.alerts.stream().map(a -> a.id).collect(Collectors.toList()),
+                disclosureQuery.createdAt);
     }
 }

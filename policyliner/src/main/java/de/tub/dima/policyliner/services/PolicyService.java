@@ -39,6 +39,10 @@ public class PolicyService {
         List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE);
     }
 
+    public PolicyDTO getPolicyById(String policyId) {
+        return convertToPolicyDTO(policyRepository.findById(policyId));
+    }
+
     // TODO: Implement sorting and filtering
     public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {
         PanacheQuery<Policy> policyQuery;

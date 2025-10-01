@@ -1,6 +1,7 @@
 package de.tub.dima.policyliner.database.policyliner;
 
 import de.tub.dima.policyliner.constants.QueryStatus;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -28,5 +29,10 @@ public class DisclosureQueryRepository implements PanacheRepository<DisclosureQu
 
     public List<DisclosureQuery> findNewQueriesByUserId(String userId) {
         return list("user.id = ?1 and inspectionStatus = 'NEW'", userId);
+    }
+
+    public PanacheQuery<DisclosureQuery> findFilteredQueries(String filter) {
+        String filterString = "%" + filter + "%";
+        return find("str(id) LIKE ?1 OR query LIKE ?1 OR message LIKE ?1 OR str(status) LIKE ?1 OR str(inspectionStatus) LIKE ?1 ORDER BY createdAt desc", filterString);
     }
 }

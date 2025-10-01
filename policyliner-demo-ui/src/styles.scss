@@ -2,3 +2,56 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+
+.new {
+  font-weight: bold;
+}
+
+.inspected {
+  font-weight: bold;
+  color: green;
+}
+
+.approved {
+  font-weight: bold;
+  color: green;
+}
+
+.modified {
+  font-weight: bold;
+  color: orangered;
+}
+
+.suspect {
+  font-weight: bold;
+  color: orange;
+}
+
+.denied {
+  font-weight: bold;
+  color: red;
+}
+
+.info {
+  color: green;
+  font-weight: bold;
+}
+
+.warning {
+  color: orange;
+  font-weight: bold;
+}
+
+.severe {
+  color: red;
+  font-weight: bold;
+}
+
+.green-icon {
+  color: green;
+}
+
+.red-icon {
+  color: red;
+}

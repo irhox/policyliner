@@ -8,6 +8,8 @@ export class AlertDTO {
   message?: string;
   isResolved?: boolean;
   createdAt?: Date;
+  resolvedAt?: Date;
+  itemsIdList?: string[];
 
   public constructor(obj?: any) {
     if (obj) {
@@ -17,6 +19,8 @@ export class AlertDTO {
       this.message = obj.message;
       this.isResolved = obj.isResolved;
       this.createdAt = obj.createdAt;
+      this.itemsIdList = obj.itemsIdList;
+      this.resolvedAt = obj.resolvedAt;
     }
   }
 

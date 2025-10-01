@@ -1,0 +1,72 @@
+@if (alert) {
+<div class="alert-detail-container">
+  <mat-card class="alert-card">
+    <mat-card-header>
+      <mat-card-title>Alert Details</mat-card-title>
+      <mat-card-subtitle>{{ alert.id }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <table class="detail-table">
+        <tr>
+          <td><strong>Type</strong></td>
+          <td>{{ alert.type }}</td>
+        </tr>
+        <tr>
+          <td><strong>Severity</strong></td>
+          <td>
+            <span [ngClass]="alert.severity?.toLowerCase()">
+              {{ alert.severity }}
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Message</strong></td>
+          <td>{{ alert.message }}</td>
+        </tr>
+        <tr>
+          <td><strong>Resolved</strong></td>
+          <td>
+            @if (alert.isResolved) {
+              <mat-icon class="green-icon">check_circle</mat-icon>
+            } @else {
+              <mat-icon class="red-icon">error</mat-icon>
+            }
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Created At</strong></td>
+          <td>{{ alert.createdAt | date: 'medium' }}</td>
+        </tr>
+        <tr>
+          <td><strong>Resolved At</strong></td>
+          <td>{{ alert.resolvedAt ? (alert.resolvedAt | date: 'medium') : '-' }}</td>
+        </tr>
+        <tr>
+          <td><strong>Query IDs</strong></td>
+          <td>
+            @if (alert && alert.itemsIdList && alert.itemsIdList.length > 0) {
+              <mat-chip-listbox>
+                @for (qid of alert.itemsIdList; track qid) {
+                <mat-chip routerLink="/query-details/{{qid}}">{{ qid }}</mat-chip>
+                }
+              </mat-chip-listbox>
+            } @else {
+              <p>None</p>
+            }
+          </td>
+        </tr>
+      </table>
+    </mat-card-content>
+
+    <mat-card-actions>
+      @if (!alert.isResolved) {
+      <button mat-raised-button color="primary" (click)="resolveAlert()">
+        Resolve
+      </button>
+      }
+      <button mat-button color="accent" routerLink="/alerts">Back</button>
+    </mat-card-actions>
+  </mat-card>
+</div>
+}

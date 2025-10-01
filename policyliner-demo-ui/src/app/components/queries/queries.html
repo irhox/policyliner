@@ -1,0 +1,36 @@
+<h1 class="query-header">Queries</h1>
+<div class="query-container">
+  <div class="query-filter">
+    <mat-form-field>
+      <mat-label>Search Query</mat-label>
+      <input matInput type="text" #filter/>
+    </mat-form-field>
+    <button matFab type="button" (click)="filterQueries(filter.value)">
+      <mat-icon>search</mat-icon></button>
+  </div>
+  <div class="query-cards-div">
+    @for (query of queries; track query.id){
+      <mat-card class="query-card">
+        <mat-card-header>
+          <mat-card-title>{{query.id}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p [ngClass]="query.status?.toLowerCase()">{{query.status}}</p>
+          <p>Run by User {{query.userId}}</p>
+          <p>Created at: {{query.createdAt | date:"MMM dd, yyyy 'at' HH:mm"}}</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button routerLink="/query-details/{{query.id}}">Details</button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+  <mat-paginator class="alert-paginator"
+                 [length]="totalElements"
+                 [pageSize]="pageSize"
+                 [pageIndex]="pageNumber"
+                 [showFirstLastButtons]="true"
+                 [pageSizeOptions]="[10, 25, 50, 100]">
+  </mat-paginator>
+
+</div>

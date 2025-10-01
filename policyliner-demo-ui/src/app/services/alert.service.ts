@@ -16,8 +16,18 @@ export class AlertService {
     this.searchAlertsUrl = environment.baseUrl + "/alert/search";
   }
 
+  private formResolveAlertUrl = (alertId:string)=> environment.baseUrl + `/alert/${alertId}/resolve`;
+  private formGetAlertByUrl = (alertId:string)=> environment.baseUrl + `/alert/${alertId}`;
+
   searchAlerts(searchDTO: SearchDTO): Observable<PagedResponseDTO<AlertDTO>> {
     return this.http.post<PagedResponseDTO<AlertDTO>>(this.searchAlertsUrl, searchDTO);
   }
 
+  resolveAlert(alertId: string): Observable<AlertDTO> {
+    return this.http.put<AlertDTO>(this.formResolveAlertUrl(alertId), null);
+  }
+
+  getAlertById(alertId: string): Observable<AlertDTO> {
+    return this.http.get<AlertDTO>(this.formGetAlertByUrl(alertId));
+  }
 }
