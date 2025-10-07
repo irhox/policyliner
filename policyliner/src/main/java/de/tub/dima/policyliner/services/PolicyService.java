@@ -1,14 +1,19 @@
 package de.tub.dima.policyliner.services;
 
+import de.tub.dima.policyliner.constants.AlertSeverity;
+import de.tub.dima.policyliner.constants.AlertType;
 import de.tub.dima.policyliner.constants.PolicyStatus;
 import de.tub.dima.policyliner.database.data.DataDBService;
+import de.tub.dima.policyliner.database.policyliner.Alert;
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
 import de.tub.dima.policyliner.dto.*;
+import de.tub.dima.policyliner.entities.SampleUniquenessReport;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
 import io.quarkus.panache.common.Page;
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
@@ -21,22 +26,67 @@ public class PolicyService {
 
     private final PolicyRepository policyRepository;
     private final DataDBService dataDBService;
+    private final UniquenessEstimationService uniquenessEstimationService;
 
     public PolicyService(
             PolicyRepository policyRepository,
-            DataDBService dataDBService) {
+            DataDBService dataDBService,
+            UniquenessEstimationService uniquenessEstimationService) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
+        this.uniquenessEstimationService = uniquenessEstimationService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
+    @RunOnVirtualThread
+    @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePoliciesCronJob() {
         evaluateDisclosurePolicies();
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePolicies() {
         Log.info("Evaluating Disclosure Policies");
-        List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE);
+        List<String> activePolicyViewNames = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().map(p -> p.viewName).toList();
+        List<SampleUniquenessReport> sampleUniquenessOfTables = uniquenessEstimationService.getSampleUniquenessOfTables(activePolicyViewNames);
+        for (SampleUniquenessReport report : sampleUniquenessOfTables) {
+            Policy currentPolicy = policyRepository.findByViewName(report.getViewName()).stream().findFirst().orElse(null);
+            if (currentPolicy == null) continue;
+            if (report.getUniquenessRatio().doubleValue() > 0.3){
+                Alert newAlert = new Alert();
+                newAlert.type = AlertType.POLICY;
+                newAlert.severity = AlertSeverity.SEVERE;
+                newAlert.message = """ 
+                        Policy with view %s has a high uniqueness ratio of %.3f.
+                        This is a cause for concern and should be reviewed. The view columns should most likely be generalized.
+                        """.formatted(report.getViewName(), report.getUniquenessRatio());
+                newAlert.persist();
+                currentPolicy.alerts.add(newAlert);
+            }else if (report.getUniquenessRatio().doubleValue() > 0.1) {
+                Alert newAlert = new Alert();
+                newAlert.type = AlertType.POLICY;
+                newAlert.severity = AlertSeverity.WARNING;
+                newAlert.message = """ 
+                        Policy with view %s has a high uniqueness ratio of %.3f.
+                        Depending on the sensitivity of the data, this may be a cause for concern and should be reviewed.
+                        """.formatted(report.getViewName(), report.getUniquenessRatio());
+                newAlert.persist();
+                currentPolicy.alerts.add(newAlert);
+            } else if (report.getUniquenessRatio().doubleValue() < 0.001) {
+                Alert newAlert = new Alert();
+                newAlert.type = AlertType.POLICY;
+                newAlert.severity = AlertSeverity.INFO;
+                newAlert.message = """ 
+                        Policy with view %s has a low uniqueness ratio of %.3f.
+                        Please review the generalization / masking of the data in this view.
+                        The usability of the data can most likely be improved.
+                """.formatted(report.getViewName(), report.getUniquenessRatio());
+                newAlert.persist();
+                currentPolicy.alerts.add(newAlert);
+            }
+            Policy.getEntityManager().merge(currentPolicy);
+        }
+        Log.info("Finished evaluating Disclosure Policies");
     }
 
     public PolicyDTO getPolicyById(String policyId) {
@@ -48,9 +98,9 @@ public class PolicyService {
         PanacheQuery<Policy> policyQuery;
         if (Objects.equals(searchDTO.getBooleanFilter(), PolicyStatus.ACTIVE.name()) ||
                 Objects.equals(searchDTO.getBooleanFilter(), PolicyStatus.INACTIVE.name())) {
-            policyQuery = policyRepository.find("status", searchDTO.getBooleanFilter());
+            policyQuery = policyRepository.findFilteredPoliciesByStatus(searchDTO.getFilter(), searchDTO.getBooleanFilter());
         } else {
-            policyQuery = policyRepository.findAll();
+            policyQuery = policyRepository.findFilteredPolicies(searchDTO.getFilter());
         }
         List<PolicyDTO> policyList = policyQuery.page(
                 Page.of(
@@ -194,6 +244,15 @@ public class PolicyService {
     }
 
     private PolicyDTO convertToPolicyDTO(Policy policy) {
-        return new PolicyDTO(policy.getId(), policy.policy, policy.status, policy.deactivatedAt);
+        return new PolicyDTO(
+                policy.getId(),
+                policy.policy,
+                policy.status,
+                policy.createdAt,
+                policy.allowedUserRole,
+                policy.viewName,
+                policy.materializedViewName,
+                policy.deactivatedAt,
+                policy.alerts.stream().map(Alert::getId).toList());
     }
 }

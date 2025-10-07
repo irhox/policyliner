@@ -1,0 +1,36 @@
+<h1 class="policy-header">Policies</h1>
+<div class="policy-container">
+  <div class="policy-filter">
+    <mat-form-field>
+      <mat-label>Search For Policy</mat-label>
+      <input matInput type="text" #filter/>
+    </mat-form-field>
+    <button matFab type="button" (click)="filterPolicies(filter.value)">
+      <mat-icon>search</mat-icon></button>
+  </div>
+  <div class="policy-cards-div">
+    @for (policy of policies; track policy.id){
+      <mat-card class="policy-card">
+        <mat-card-header>
+          <mat-card-title>{{policy.viewName}}</mat-card-title>
+          <mat-card-subtitle>{{policy.id}}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p [ngClass]="policy.status?.toLowerCase()">{{policy.status}}</p>
+          <p>Created at: {{policy.createdAt | date:"MMM dd, yyyy 'at' HH:mm"}}</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button routerLink="/policy-details/{{policy.id}}">Details</button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+  <mat-paginator class="alert-paginator"
+                 [length]="totalElements"
+                 [pageSize]="pageSize"
+                 [pageIndex]="pageNumber"
+                 [showFirstLastButtons]="true"
+                 [pageSizeOptions]="[10, 25, 50, 100]">
+  </mat-paginator>
+
+</div>

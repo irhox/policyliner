@@ -1,0 +1,22 @@
+.policy-header {
+  width: 70%;
+  margin: 1rem 5rem;
+}
+
+.policy-container {
+  width: 80%;
+  margin: 1rem 5rem;
+}
+
+.policy-card {
+  margin: 1rem;
+}
+
+mat-form-field {
+  margin: 1rem;
+}
+
+.policy-cards-div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 520px));
+}

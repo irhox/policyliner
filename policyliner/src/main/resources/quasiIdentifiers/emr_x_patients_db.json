@@ -1,0 +1,68 @@
+{"quasiIdentifiers": [
+  {"viewName": "admissions_diagnosis_policy",
+    "columns": [
+      "admissions_patientid",
+      "admissions_admissionid",
+      "primarydiagnosiscode"
+    ]
+  },
+  {"viewName": "labs_policy",
+    "columns": [
+      "patientid",
+      "labname"
+    ]
+  },
+  {"viewName": "patients_admissions_diagnosis_labs_policy",
+    "columns": [
+      "patientgender",
+      "patients_patientid",
+      "labnames",
+      "admissions_admissionid",
+      "primarydiagnosiscode"
+    ]
+  },
+  {"viewName": "patients_admissions_diagnosis_labs_policy790",
+    "columns": [
+      "patients_patientid",
+      "admissions_admissionid",
+      "primarydiagnosiscode",
+      "labname"
+    ]
+  },
+  {"viewName": "patients_admissions_diagnosis_policy",
+    "columns": [
+      "patients_patientid",
+      "admissions_admissionid",
+      "primarydiagnosiscode"
+    ]
+  },
+  {"viewName": "patients_admissions_diagnosis_policy556",
+    "columns": [
+      "patients_patientid",
+      "admissions_admissionid",
+      "primarydiagnosiscode",
+      "to_date_to_char_admissionstartdate",
+      "to_date_to_char_admissionenddate"
+    ]
+  },
+  {"viewName": "patients_admissions_policy",
+    "columns": [
+      "patients_patientid",
+      "admissions_admissionid",
+      "to_date_to_char_admissionstartdate",
+      "to_date_to_char_admissionenddate",
+      "patientgender",
+      "patientmaritalstatus"
+    ]
+  },
+  {"viewName": "patients_policy",
+    "columns": [
+      "patientid",
+      "patientgender",
+      "patientmaritalstatus",
+      "patientrace",
+      "patientdateofbirth"
+    ]
+  }
+]
+}

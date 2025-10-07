@@ -26,7 +26,7 @@ public class PolicyResource {
     }
 
     @GET
-    @Path("{policyId}")
+    @Path("/{policyId}")
     @Produces(MediaType.APPLICATION_JSON)
     public PolicyDTO getPolicyById(@PathParam("policyId") String policyId) {
         return policyService.getPolicyById(policyId);
@@ -41,7 +41,7 @@ public class PolicyResource {
         return Response.ok().build();
     }
 
-    @GET
+    @POST
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
     public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {

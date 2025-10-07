@@ -6,6 +6,8 @@ import {Alerts} from './components/alerts/alerts';
 import {Queries} from './components/queries/queries';
 import {AlertDetails} from './components/alert-details/alert-details';
 import {QueryDetails} from './components/query-details/query-details';
+import {Policies} from './components/policies/policies';
+import {PolicyDetails} from './components/policy-details/policy-details';
 
 export const routes: Routes = [
   {
@@ -35,5 +37,13 @@ export const routes: Routes = [
   {
     path: 'query-details/:id',
     component: QueryDetails,
+  },
+  {
+    path: 'policies',
+    component: Policies,
+  },
+  {
+    path: 'policy-details/:id',
+    component: PolicyDetails,
   }
 ];

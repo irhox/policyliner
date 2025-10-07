@@ -43,12 +43,20 @@
           <td>{{ alert.resolvedAt ? (alert.resolvedAt | date: 'medium') : '-' }}</td>
         </tr>
         <tr>
-          <td><strong>Query IDs</strong></td>
+          @if (alert.type === "POLICY") {
+            <td><strong>Policy IDs</strong></td>
+          } @else {
+            <td><strong>Query IDs</strong></td>
+          }
           <td>
             @if (alert && alert.itemsIdList && alert.itemsIdList.length > 0) {
               <mat-chip-listbox>
                 @for (qid of alert.itemsIdList; track qid) {
-                <mat-chip routerLink="/query-details/{{qid}}">{{ qid }}</mat-chip>
+                  @if (alert.type === "POLICY") {
+                    <mat-chip routerLink="/policy-details/{{qid}}">{{ qid }}</mat-chip>
+                  } @else {
+                    <mat-chip routerLink="/query-details/{{qid}}">{{ qid }}</mat-chip>
+                  }
                 }
               </mat-chip-listbox>
             } @else {
