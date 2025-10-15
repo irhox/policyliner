@@ -393,7 +393,7 @@ public class QueryService {
                 disclosureQuery.status,
                 disclosureQuery.inspectionStatus,
                 disclosureQuery.message,
-                disclosureQuery.alerts == null || disclosureQuery.alerts.isEmpty() ? List.of() : disclosureQuery.alerts.stream().map(a -> a.id).collect(Collectors.toList()),
+                disclosureQuery.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity, (existing, replacement) -> existing)),
                 disclosureQuery.createdAt);
     }
 }

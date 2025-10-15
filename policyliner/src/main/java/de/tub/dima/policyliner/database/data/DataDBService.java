@@ -223,6 +223,6 @@ public class DataDBService {
                 """.formatted(columnString, columnString, viewName, columnString);
 
         Query query = em.createNativeQuery(queryString, SampleUniquenessReport.class);
-        return (SampleUniquenessReport) query.getResultList().getFirst();
+        return (SampleUniquenessReport) query.getSingleResult();
     }
 }

@@ -35,10 +35,10 @@
           <tr>
             <td><strong>Alert IDs</strong></td>
             <td>
-              @if (query && query.alertIdList && query.alertIdList.length > 0) {
+              @if (query && query.alertSeverityMap && query.alertSeverityMap.size > 0) {
                 <mat-chip-listbox>
-                  @for (qid of query.alertIdList; track qid) {
-                    <mat-chip routerLink="/alert-details/{{qid}}">{{ qid }}</mat-chip>
+                  @for (entry of query.alertSeverityMap | keyvalue; track entry.key) {
+                    <mat-chip class="{{entry.value.toLowerCase()}}-chip" routerLink="/alert-details/{{entry.key}}">{{ entry.key + " : " + entry.value }}</mat-chip>
                   }
                 </mat-chip-listbox>
               } @else {

@@ -26,6 +26,10 @@ public class Policy extends PanacheEntityBase {
     @Column(name="status")
     public PolicyStatus status;
     public String allowedUserRole;
+
+    @OneToMany(mappedBy = "policy")
+    public List<PrivacyMetric> metrics;
+
     @ManyToMany
     @JoinTable(
             name = "policy_alert",

@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {DatePipe, NgClass} from "@angular/common";
+import {DatePipe, KeyValuePipe, NgClass} from "@angular/common";
 import {MatButton} from "@angular/material/button";
 import {
   MatCard,
@@ -28,9 +28,11 @@ import {QueryService} from '../../services/query.service';
     MatChip,
     MatChipListbox,
     RouterLink,
-    NgClass
+    NgClass,
+    KeyValuePipe
   ],
   templateUrl: './query-details.html',
+  standalone: true,
   styleUrl: './query-details.scss'
 })
 export class QueryDetails implements OnInit {
@@ -44,8 +46,7 @@ export class QueryDetails implements OnInit {
   ngOnInit(){
     this.route.url.subscribe(u => this.queryId = u[1].path);
     this.queryService.getQueryById(this.queryId).subscribe(query => {
-      this.query = query;
-      console.log(this.query);
+      this.query = new QueryResponseDTO(query);
     })
   }
 }

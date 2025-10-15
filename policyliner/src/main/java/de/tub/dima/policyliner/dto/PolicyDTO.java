@@ -1,9 +1,10 @@
 package de.tub.dima.policyliner.dto;
 
+import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.PolicyStatus;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 public class PolicyDTO {
     private String id;
@@ -14,7 +15,7 @@ public class PolicyDTO {
     private String viewName;
     private String materializedViewName;
     private LocalDateTime deactivatedAt;
-    private List<String> alertIdList;
+    private Map<String, AlertSeverity> alertSeverityMap;
 
     public PolicyDTO(
             String id,
@@ -25,7 +26,7 @@ public class PolicyDTO {
             String viewName,
             String materializedViewName,
             LocalDateTime deactivatedAt,
-            List<String> alertIdList
+            Map<String, AlertSeverity> alertSeverityMap
             ) {
         this.id = id;
         this.policy = policy;
@@ -35,7 +36,7 @@ public class PolicyDTO {
         this.viewName = viewName;
         this.materializedViewName = materializedViewName;
         this.deactivatedAt = deactivatedAt;
-        this.alertIdList = alertIdList;
+        this.alertSeverityMap = alertSeverityMap;
     }
 
     public String getId() {
@@ -102,11 +103,11 @@ public class PolicyDTO {
         this.materializedViewName = materializedViewName;
     }
 
-    public List<String> getAlertIdList() {
-        return alertIdList;
+    public Map<String, AlertSeverity> getAlertSeverityMap() {
+        return alertSeverityMap;
     }
 
-    public void setAlertIdList(List<String> alertIdList) {
-        this.alertIdList = alertIdList;
+    public void setAlertSeverityMap(Map<String, AlertSeverity> alertSeverityMap) {
+        this.alertSeverityMap = alertSeverityMap;
     }
 }

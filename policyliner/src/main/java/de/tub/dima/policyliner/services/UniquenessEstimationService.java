@@ -9,18 +9,13 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
-public class UniquenessEstimationService {
-
-    @ConfigProperty(name = "data.quasi-identifiers.file-path")
-    String quasiIdentifiersFilePath;
+public class UniquenessEstimationService implements PrivacyMetricService<SampleUniquenessReport> {
 
     @Inject
     ObjectMapper objectMapper;
@@ -34,36 +29,30 @@ public class UniquenessEstimationService {
         this.dataDBService = dataDBService;
     }
 
-    private void getQuasiIdentifiersFromJsonFile() {
-        try (InputStream is = getClass().getResourceAsStream(quasiIdentifiersFilePath)) {
-            quasiIdentifiers = objectMapper.readValue(is, JsonQuasiIdentifiers.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load JSON quasi-identifiers file", e);
-        }
-    }
-
+    @Override
     @Transactional(Transactional.TxType.REQUIRED)
-    public SampleUniquenessReport getSampleUniquenessOfTable(String viewName) {
+    public SampleUniquenessReport computeMetricForTable(String tableName) {
         if (quasiIdentifiers == null) {
-            getQuasiIdentifiersFromJsonFile();
+            quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
         }
-        Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(viewName)).findFirst();
+        Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent()) {
-            return dataDBService.getSampleUniquenessReportOfTable(viewName, identifier.get().getColumns());
+            return dataDBService.getSampleUniquenessReportOfTable(tableName, identifier.get().getColumns());
         } else {
-            throw new RuntimeException("No quasi-identifier object found for view " + viewName);
+            throw new RuntimeException("No quasi-identifier object found for view " + tableName);
         }
     }
 
+    @Override
     @Transactional(Transactional.TxType.REQUIRED)
-    public List<SampleUniquenessReport> getSampleUniquenessOfTables(List<String> viewNames) {
+    public List<SampleUniquenessReport> computeMetricForTables(List<String> tableNames) {
         if (quasiIdentifiers == null) {
-            getQuasiIdentifiersFromJsonFile();
+            quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
         }
         List<SampleUniquenessReport> reports = new ArrayList<>();
 
         for (JsonQuasiIdentifier identifier : quasiIdentifiers.getQuasiIdentifiers()) {
-            if (viewNames.contains(identifier.getViewName())) {
+            if (tableNames.contains(identifier.getViewName())) {
                 try {
                     SampleUniquenessReport report = dataDBService.getSampleUniquenessReportOfTable(
                             identifier.getViewName(),
@@ -76,7 +65,6 @@ public class UniquenessEstimationService {
                 }
             }
         }
-
         return reports;
     }
 

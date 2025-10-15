@@ -1,5 +1,6 @@
 import {QueryStatus} from '../enums/queryStatus.enum';
 import {QueryInspectionStatus} from '../enums/queryInspectionStatus.enum';
+import {AlertSeverity} from '../enums/alertSeverity.enum';
 
 export class QueryResponseDTO {
   id?: string;
@@ -9,7 +10,7 @@ export class QueryResponseDTO {
   message?: string;
   createdAt?: Date;
   inspectionStatus?: QueryInspectionStatus;
-  alertIdList?: string[];
+  alertSeverityMap?: Map<string, AlertSeverity>;
 
   constructor(obj?: any) {
     if (obj) {
@@ -19,7 +20,7 @@ export class QueryResponseDTO {
       this.message = obj.message;
       this.createdAt = obj.createdAt;
       this.inspectionStatus = obj.inspectionStatus;
-      this.alertIdList = obj.alertIdList;
+      this.alertSeverityMap = new Map(Object.entries(obj.alertSeverityMap));
     }
   }
 }

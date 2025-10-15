@@ -1,10 +1,11 @@
 package de.tub.dima.policyliner.dto;
 
+import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.QueryInspectionStatus;
 import de.tub.dima.policyliner.constants.QueryStatus;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 public class QueryResponseDTO {
     private String id;
@@ -14,16 +15,16 @@ public class QueryResponseDTO {
     private QueryInspectionStatus inspectionStatus;
     private String message;
     private LocalDateTime createdAt;
-    private List<String> alertIdList;
+    private Map<String, AlertSeverity> alertSeverityMap;
 
-    public QueryResponseDTO(String id, String userId, String query, QueryStatus status, QueryInspectionStatus inspectionStatus, String message, List<String> alertIdList, LocalDateTime createdAt) {
+    public QueryResponseDTO(String id, String userId, String query, QueryStatus status, QueryInspectionStatus inspectionStatus, String message, Map<String, AlertSeverity> alertSeverityMap, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.query = query;
         this.status = status;
         this.inspectionStatus = inspectionStatus;
         this.message = message;
-        this.alertIdList = alertIdList;
+        this.alertSeverityMap = alertSeverityMap;
         this.createdAt = createdAt;
     }
 
@@ -59,12 +60,12 @@ public class QueryResponseDTO {
         this.message = message;
     }
 
-    public List<String> getAlertIdList() {
-        return alertIdList;
+    public Map<String, AlertSeverity> getAlertSeverityMap() {
+        return alertSeverityMap;
     }
 
-    public void setAlertIdList(List<String> alertIdList) {
-        this.alertIdList = alertIdList;
+    public void setAlertSeverityMap(Map<String, AlertSeverity> alertSeverityMap) {
+        this.alertSeverityMap = alertSeverityMap;
     }
 
     public LocalDateTime getCreatedAt() {

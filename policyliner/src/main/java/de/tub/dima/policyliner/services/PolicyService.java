@@ -2,11 +2,10 @@ package de.tub.dima.policyliner.services;
 
 import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.AlertType;
+import de.tub.dima.policyliner.constants.MetricSeverity;
 import de.tub.dima.policyliner.constants.PolicyStatus;
 import de.tub.dima.policyliner.database.data.DataDBService;
-import de.tub.dima.policyliner.database.policyliner.Alert;
-import de.tub.dima.policyliner.database.policyliner.Policy;
-import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
+import de.tub.dima.policyliner.database.policyliner.*;
 import de.tub.dima.policyliner.dto.*;
 import de.tub.dima.policyliner.entities.SampleUniquenessReport;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -17,8 +16,10 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ApplicationScoped
@@ -27,32 +28,48 @@ public class PolicyService {
     private final PolicyRepository policyRepository;
     private final DataDBService dataDBService;
     private final UniquenessEstimationService uniquenessEstimationService;
+    private final PrivacyMetricRepository privacyMetricRepository;
 
     public PolicyService(
             PolicyRepository policyRepository,
             DataDBService dataDBService,
-            UniquenessEstimationService uniquenessEstimationService) {
+            UniquenessEstimationService uniquenessEstimationService,
+            PrivacyMetricRepository privacyMetricRepository) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
         this.uniquenessEstimationService = uniquenessEstimationService;
+        this.privacyMetricRepository = privacyMetricRepository;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
     @RunOnVirtualThread
     @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePoliciesCronJob() {
+        Log.info("Evaluating Disclosure Policies");
+        Instant start = Instant.now();
         evaluateDisclosurePolicies();
+        Instant end = Instant.now();
+        Log.info("Finished evaluating Disclosure Policies in " + (end.toEpochMilli() - start.toEpochMilli()) + " ms");
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePolicies() {
-        Log.info("Evaluating Disclosure Policies");
         List<String> activePolicyViewNames = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().map(p -> p.viewName).toList();
-        List<SampleUniquenessReport> sampleUniquenessOfTables = uniquenessEstimationService.getSampleUniquenessOfTables(activePolicyViewNames);
+        List<SampleUniquenessReport> sampleUniquenessOfTables = uniquenessEstimationService.computeMetricForTables(activePolicyViewNames);
         for (SampleUniquenessReport report : sampleUniquenessOfTables) {
             Policy currentPolicy = policyRepository.findByViewName(report.getViewName()).stream().findFirst().orElse(null);
             if (currentPolicy == null) continue;
-            if (report.getUniquenessRatio().doubleValue() > 0.3){
+            List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(currentPolicy.getId());
+            PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
+                    filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.LOWER_LIMIT))
+                    .findFirst().orElse(null);
+            PrivacyMetric upperUniquenessRatio = policyPrivacyMetrics.stream()
+                    .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.UPPER_LIMIT))
+                    .findFirst().orElse(null);
+            PrivacyMetric middleUniquenessRatio = policyPrivacyMetrics.stream()
+                    .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
+                    .findFirst().orElse(null);
+            if (upperUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.SEVERE;
@@ -62,7 +79,7 @@ public class PolicyService {
                         """.formatted(report.getViewName(), report.getUniquenessRatio());
                 newAlert.persist();
                 currentPolicy.alerts.add(newAlert);
-            }else if (report.getUniquenessRatio().doubleValue() > 0.1) {
+            } else if (middleUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(middleUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
@@ -72,7 +89,7 @@ public class PolicyService {
                         """.formatted(report.getViewName(), report.getUniquenessRatio());
                 newAlert.persist();
                 currentPolicy.alerts.add(newAlert);
-            } else if (report.getUniquenessRatio().doubleValue() < 0.001) {
+            } else if (lowerUniquenessRatio != null && report.getUniquenessRatio().doubleValue() < Double.parseDouble(lowerUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.INFO;
@@ -86,7 +103,6 @@ public class PolicyService {
             }
             Policy.getEntityManager().merge(currentPolicy);
         }
-        Log.info("Finished evaluating Disclosure Policies");
     }
 
     public PolicyDTO getPolicyById(String policyId) {
@@ -253,6 +269,6 @@ public class PolicyService {
                 policy.viewName,
                 policy.materializedViewName,
                 policy.deactivatedAt,
-                policy.alerts.stream().map(Alert::getId).toList());
+                policy.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity)));
     }
 }

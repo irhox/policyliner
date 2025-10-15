@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {DatePipe, NgClass} from "@angular/common";
+import {DatePipe, KeyValuePipe, NgClass} from "@angular/common";
 import {MatButton} from "@angular/material/button";
 import {
   MatCard,
@@ -28,9 +28,11 @@ import {PolicyService} from '../../services/policy.service';
     MatChip,
     MatChipListbox,
     RouterLink,
-    NgClass
+    NgClass,
+    KeyValuePipe
   ],
   templateUrl: './policy-details.html',
+  standalone: true,
   styleUrl: './policy-details.scss'
 })
 export class PolicyDetails implements OnInit {
@@ -44,8 +46,7 @@ export class PolicyDetails implements OnInit {
   ngOnInit(){
     this.route.url.subscribe(u => this.policyId = u[1].path);
     this.policyService.getPolicyById(this.policyId).subscribe(policy => {
-      this.policy = policy;
-      console.log(this.policy);
+      this.policy = new PolicyDTO(policy);
     })
   }
 }

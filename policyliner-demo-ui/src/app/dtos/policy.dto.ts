@@ -1,4 +1,5 @@
 import {PolicyStatus} from '../enums/policyStatus.enum';
+import {AlertSeverity} from '../enums/alertSeverity.enum';
 
 export class PolicyDTO {
   id?: string;
@@ -9,7 +10,7 @@ export class PolicyDTO {
   viewName?: string;
   materializedViewName?: string;
   deactivatedAt?: Date;
-  alertIdList?: string[];
+  alertSeverityMap?: Map<string, AlertSeverity>;
 
   constructor(obj?: any) {
     if (obj) {
@@ -21,7 +22,7 @@ export class PolicyDTO {
       this.allowedUserRole = obj.allowedUserRole;
       this.viewName = obj.viewName;
       this.materializedViewName = obj.materializedViewName;
-      this.alertIdList = obj.alertIdList;
+      this.alertSeverityMap = new Map(Object.entries(obj.alertSeverityMap));
     }
   }
 }
