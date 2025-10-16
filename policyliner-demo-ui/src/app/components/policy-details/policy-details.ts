@@ -13,6 +13,8 @@ import {MatChip, MatChipListbox} from "@angular/material/chips";
 import {ActivatedRoute, RouterLink} from "@angular/router";
 import {PolicyDTO} from '../../dtos/policy.dto';
 import {PolicyService} from '../../services/policy.service';
+import {PrivacyMetricDTO} from '../../dtos/privacyMetric.dto';
+import {PrivacyMetricService} from '../../services/privacyMetric.service';
 
 @Component({
   selector: 'app-policy-details',
@@ -38,8 +40,12 @@ import {PolicyService} from '../../services/policy.service';
 export class PolicyDetails implements OnInit {
   policyId: string = "";
   policy: PolicyDTO = new PolicyDTO();
+  metrics: PrivacyMetricDTO[] = [];
 
-  constructor(private route: ActivatedRoute, private policyService: PolicyService) {
+  constructor(
+    private route: ActivatedRoute,
+    private policyService: PolicyService,
+    private privacyMetricService: PrivacyMetricService) {
   }
 
 
@@ -47,6 +53,11 @@ export class PolicyDetails implements OnInit {
     this.route.url.subscribe(u => this.policyId = u[1].path);
     this.policyService.getPolicyById(this.policyId).subscribe(policy => {
       this.policy = new PolicyDTO(policy);
-    })
+    });
+    this.privacyMetricService.getPrivacyMetricsOfPolicy(this.policyId).subscribe(
+      metrics => {
+        this.metrics = metrics;
+      }
+    )
   }
 }

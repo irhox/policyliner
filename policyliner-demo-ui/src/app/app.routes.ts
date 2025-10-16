@@ -8,6 +8,7 @@ import {AlertDetails} from './components/alert-details/alert-details';
 import {QueryDetails} from './components/query-details/query-details';
 import {Policies} from './components/policies/policies';
 import {PolicyDetails} from './components/policy-details/policy-details';
+import {MetricDetails} from './components/metric-details/metric-details';
 
 export const routes: Routes = [
   {
@@ -45,5 +46,9 @@ export const routes: Routes = [
   {
     path: 'policy-details/:id',
     component: PolicyDetails,
+  },
+  {
+    path: 'metric-details/:id',
+    component: MetricDetails,
   }
 ];

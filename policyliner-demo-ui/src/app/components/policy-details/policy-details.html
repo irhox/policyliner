@@ -58,6 +58,20 @@
               }
             </td>
           </tr>
+          <tr>
+            <td><strong>Metrics</strong></td>
+            <td>
+              @if (metrics && metrics.length > 0) {
+                <mat-chip-listbox>
+                  @for (metric of metrics; track metric) {
+                    <mat-chip routerLink="/metric-details/{{metric.id}}">{{ metric.name + " : " + metric.value }}</mat-chip>
+                  }
+                </mat-chip-listbox>
+              } @else {
+                <p>None</p>
+              }
+            </td>
+          </tr>
         </table>
       </mat-card-content>
 

@@ -55,9 +55,8 @@ public class PolicyService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePolicies() {
         List<String> activePolicyViewNames = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().map(p -> p.viewName).toList();
-        List<SampleUniquenessReport> sampleUniquenessOfTables = uniquenessEstimationService.computeMetricForTables(activePolicyViewNames);
-        for (SampleUniquenessReport report : sampleUniquenessOfTables) {
-            Policy currentPolicy = policyRepository.findByViewName(report.getViewName()).stream().findFirst().orElse(null);
+        for (String viewName : activePolicyViewNames) {
+            Policy currentPolicy = policyRepository.findByViewName(viewName).stream().findFirst().orElse(null);
             if (currentPolicy == null) continue;
             List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(currentPolicy.getId());
             PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
@@ -69,6 +68,8 @@ public class PolicyService {
             PrivacyMetric middleUniquenessRatio = policyPrivacyMetrics.stream()
                     .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
                     .findFirst().orElse(null);
+            if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) continue;
+            SampleUniquenessReport report = uniquenessEstimationService.computeMetricForTable(viewName);
             if (upperUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;

@@ -1,0 +1,43 @@
+@if (metric) {
+  <div class="metric-detail-container">
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>Privacy Metric Details</mat-card-title>
+        <mat-card-subtitle>{{ metric.id }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <table class="detail-table">
+          <tr>
+            <td><strong>Metric Name</strong></td>
+            <td>
+            <span>
+              {{ metric.name }}
+            </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Description</strong></td>
+            <td>{{ metric.description }}</td>
+          </tr>
+          <tr>
+            <td><strong>Metric Value</strong></td>
+            <td>{{ metric.value }}</td>
+          </tr>
+          <tr>
+            <td><strong>Value Type</strong></td>
+            <td>{{ metric.valueType }}</td>
+          </tr>
+          <tr>
+            <td><strong>Metric Type</strong></td>
+            <td>{{ metric.metricSeverity }}</td>
+          </tr>
+        </table>
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button mat-button color="accent" routerLink="/policy-details/{{metric.policyId}}">Back To Policy</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
