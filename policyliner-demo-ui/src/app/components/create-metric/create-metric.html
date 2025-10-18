@@ -1,0 +1,44 @@
+<h1 class="metric-header">Create Metric</h1>
+<form [formGroup]="metricForm" (ngSubmit)="onSubmit()" class="form-container">
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="name" required>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Description</mat-label>
+    <textarea matInput formControlName="description"></textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Value</mat-label>
+    <input matInput formControlName="value">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Value Type</mat-label>
+    <input matInput formControlName="valueType">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Metric Severity</mat-label>
+    <mat-select formControlName="metricSeverity">
+      @for (severity of severities; track severity) {
+        <mat-option [value]="severity">
+          {{ severity }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="form-field">
+    <mat-label>Policy ID</mat-label>
+    <input matInput formControlName="policyId">
+  </mat-form-field>
+
+  <div class="button-container">
+    <button mat-raised-button color="primary" type="submit" [disabled]="metricForm.invalid">Submit</button>
+    <button mat-stroked-button color="warn" type="button" (click)="onReset()">Reset</button>
+    <button mat-stroked-button color="warn" type="button" (click)="onCancel()">Cancel</button>
+  </div>
+</form>

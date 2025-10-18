@@ -66,6 +66,7 @@
                   @for (metric of metrics; track metric) {
                     <mat-chip routerLink="/metric-details/{{metric.id}}">{{ metric.name + " : " + metric.value }}</mat-chip>
                   }
+                  <mat-chip routerLink="/create-metric-for/{{policy.id}}">+</mat-chip>
                 </mat-chip-listbox>
               } @else {
                 <p>None</p>
@@ -76,7 +77,7 @@
       </mat-card-content>
 
       <mat-card-actions>
-        <button mat-button color="accent" routerLink="/policies">Back</button>
+        <button mat-button color="accent" routerLink="/policies">Back To Policies Overview</button>
       </mat-card-actions>
     </mat-card>
   </div>

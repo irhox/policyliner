@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class PrivacyMetricValuesService {
@@ -27,7 +28,9 @@ public class PrivacyMetricValuesService {
     }
 
     public PrivacyMetricDTO getPrivacyMetricValueById(String id){
-        return convertPrivacyMetricToDTO(privacyMetricRepository.findById(id));
+        Optional<PrivacyMetric> metric = privacyMetricRepository.findById(id);
+        if (metric.isEmpty()) throw new RuntimeException("No privacy metric with id " + id);
+        return convertPrivacyMetricToDTO(metric.get());
     }
 
     @Transactional
@@ -38,15 +41,20 @@ public class PrivacyMetricValuesService {
     }
 
     private PrivacyMetric convertDTOToPrivacyMetric(PrivacyMetricDTO privacyMetricDTO) {
-        PrivacyMetric newMetric = new PrivacyMetric();
-        newMetric.id = privacyMetricDTO.getId();
-        newMetric.name = privacyMetricDTO.getName();
-        newMetric.description = privacyMetricDTO.getDescription();
-        newMetric.value = privacyMetricDTO.getValue();
-        newMetric.valueType = privacyMetricDTO.getValueType();
-        newMetric.metricSeverity = privacyMetricDTO.getMetricSeverity();
-        newMetric.policy = policyRepository.findById(privacyMetricDTO.getPolicyId());
-        return newMetric;
+        Optional<PrivacyMetric> newMetricOpt = privacyMetricRepository.findById(privacyMetricDTO.getId());
+        PrivacyMetric metric = new PrivacyMetric();
+        if (newMetricOpt.isPresent()) {
+            metric = newMetricOpt.get();
+        } else {
+            metric.policy = policyRepository.findById(privacyMetricDTO.getPolicyId());
+        }
+        metric.name = privacyMetricDTO.getName();
+        metric.description = privacyMetricDTO.getDescription();
+        metric.value = privacyMetricDTO.getValue();
+        metric.valueType = privacyMetricDTO.getValueType();
+        metric.metricSeverity = privacyMetricDTO.getMetricSeverity();
+
+        return metric;
     }
 
     private PrivacyMetricDTO convertPrivacyMetricToDTO(PrivacyMetric privacyMetric) {

@@ -9,6 +9,7 @@ import {QueryDetails} from './components/query-details/query-details';
 import {Policies} from './components/policies/policies';
 import {PolicyDetails} from './components/policy-details/policy-details';
 import {MetricDetails} from './components/metric-details/metric-details';
+import {CreateMetric} from './components/create-metric/create-metric';
 
 export const routes: Routes = [
   {
@@ -50,5 +51,13 @@ export const routes: Routes = [
   {
     path: 'metric-details/:id',
     component: MetricDetails,
+  },
+  {
+    path: 'create-metric-for/:policyId',
+    component: CreateMetric,
+  },
+  {
+    path: 'update-metric-for/:policyId/:metricId',
+    component: CreateMetric,
   }
 ];

@@ -36,7 +36,8 @@
       </mat-card-content>
 
       <mat-card-actions>
-        <button mat-button color="accent" routerLink="/policy-details/{{metric.policyId}}">Back To Policy</button>
+        <button mat-button routerLink="/policy-details/{{metric.policyId}}">Back To Policy</button>
+        <button mat-raised-button routerLink="/update-metric-for/{{metric.policyId}}/{{metric.id}}">Edit Metric</button>
       </mat-card-actions>
     </mat-card>
   </div>
