@@ -8,18 +8,21 @@ public class CreatePolicyDTO {
     private List<ViewAttributeDTO> columns;
     private Boolean isMaterializedView;
     private String userRole;
+    private Boolean useDefaultMetrics;
 
     public CreatePolicyDTO(
             String policyName,
             List<TableInfoDTO> tables,
             List<ViewAttributeDTO> columns,
             Boolean isMaterializedView,
-            String userRole) {
+            String userRole,
+            Boolean useDefaultMetrics) {
         this.policyName = policyName;
         this.tables = tables;
         this.columns = columns;
         this.isMaterializedView = isMaterializedView;
         this.userRole = userRole;
+        this.useDefaultMetrics = useDefaultMetrics;
     }
 
     public CreatePolicyDTO() {
@@ -61,6 +64,12 @@ public class CreatePolicyDTO {
     }
     public void setUserRole(String userRole) {
         this.userRole = userRole;
+    }
+    public Boolean getUseDefaultMetrics() {
+        return useDefaultMetrics;
+    }
+    public void setUseDefaultMetrics(Boolean useDefaultMetrics) {
+        this.useDefaultMetrics = useDefaultMetrics;
     }
 
     @Override

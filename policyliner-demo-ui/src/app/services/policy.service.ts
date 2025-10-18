@@ -6,6 +6,7 @@ import {PolicyDTO} from '../dtos/policy.dto';
 import {Injectable} from '@angular/core';
 import {SearchDTO} from '../dtos/search.dto';
 import {PagedResponseDTO} from '../dtos/pagedResponse.dto';
+import {CreatePolicyFromStringDTO} from '../dtos/createPolicyFromString.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -26,8 +27,8 @@ export class PolicyService {
     return this.http.post(this.createPolicyFromObjectUrl, createPolicyDTO);
   }
 
-  createPolicyFromString(policyStatement: string) : Observable<PolicyDTO> {
-    return this.http.post(this.createPolicyFromStringUrl, policyStatement);
+  createPolicyFromString(createPolicyFromStringDTO: CreatePolicyFromStringDTO) : Observable<PolicyDTO> {
+    return this.http.post(this.createPolicyFromStringUrl, createPolicyFromStringDTO);
   }
 
   searchPolicies(searchDTO: SearchDTO): Observable<PagedResponseDTO<PolicyDTO>> {

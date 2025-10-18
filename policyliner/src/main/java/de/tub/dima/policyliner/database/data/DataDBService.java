@@ -109,7 +109,6 @@ public class DataDBService {
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public String createPolicy(CreatePolicyDTO createPolicyDTO) {
-        Log.info("Creating policy " + createPolicyDTO.getPolicyName());
         Random random = new Random();
         String viewType = createPolicyDTO.getIsMaterializedView() ? "MATERIALIZED VIEW" : "VIEW";
         // check if a view with the same name already exists
@@ -121,7 +120,7 @@ public class DataDBService {
         if (views.stream().map(View::getViewName).toList().contains(createPolicyDTO.getPolicyName())){
             createPolicyDTO.setPolicyName(createPolicyDTO.getPolicyName() + random.nextInt(1000));
         }
-
+        Log.info("Creating policy " + createPolicyDTO.getPolicyName());
 
         StringBuilder policyCreationQuery = viewType.equals("MATERIALIZED VIEW") ? new StringBuilder("CREATE MATERIALIZED VIEW IF NOT EXISTS ") : new StringBuilder("CREATE VIEW ");
         policyCreationQuery.append(createPolicyDTO.getPolicyName()).append(" AS SELECT ");

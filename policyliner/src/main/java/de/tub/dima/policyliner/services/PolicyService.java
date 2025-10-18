@@ -29,16 +29,19 @@ public class PolicyService {
     private final DataDBService dataDBService;
     private final UniquenessEstimationService uniquenessEstimationService;
     private final PrivacyMetricRepository privacyMetricRepository;
+    private final PrivacyMetricValuesService privacyMetricValuesService;
 
     public PolicyService(
             PolicyRepository policyRepository,
             DataDBService dataDBService,
             UniquenessEstimationService uniquenessEstimationService,
-            PrivacyMetricRepository privacyMetricRepository) {
+            PrivacyMetricRepository privacyMetricRepository,
+            PrivacyMetricValuesService privacyMetricValuesService) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
         this.uniquenessEstimationService = uniquenessEstimationService;
         this.privacyMetricRepository = privacyMetricRepository;
+        this.privacyMetricValuesService = privacyMetricValuesService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
@@ -68,7 +71,10 @@ public class PolicyService {
             PrivacyMetric middleUniquenessRatio = policyPrivacyMetrics.stream()
                     .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
                     .findFirst().orElse(null);
-            if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) continue;
+            if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) {
+                Log.warn("No privacy metrics found for policy " + currentPolicy.id);
+                continue;
+            }
             SampleUniquenessReport report = uniquenessEstimationService.computeMetricForTable(viewName);
             if (upperUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
@@ -144,6 +150,9 @@ public class PolicyService {
         newPolicy.status = PolicyStatus.ACTIVE;
         newPolicy.allowedUserRole = createPolicyDTO.getUserRole();
         policyRepository.persist(newPolicy);
+        if (createPolicyDTO.getUseDefaultMetrics()) {
+            privacyMetricValuesService.storeAllDefaultPrivacyMetricValuesForPolicy(newPolicy);
+        }
         return convertToPolicyDTO(newPolicy);
     }
 
@@ -167,6 +176,7 @@ public class PolicyService {
         String disclosurePolicy = disclosurePolicyDTO.getPolicy();
         final CreatePolicyDTO disclosurePolicyInfo = new CreatePolicyDTO();
         disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
+        disclosurePolicyInfo.setUseDefaultMetrics(disclosurePolicyDTO.getUseDefaultMetrics());
 
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
         int whereIndex = disclosurePolicy.contains("where") ? disclosurePolicy.indexOf("where") : disclosurePolicy.length();
@@ -270,6 +280,8 @@ public class PolicyService {
                 policy.viewName,
                 policy.materializedViewName,
                 policy.deactivatedAt,
-                policy.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity)));
+                policy.alerts != null ?
+                        policy.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity))
+                        : Map.of());
     }
 }
