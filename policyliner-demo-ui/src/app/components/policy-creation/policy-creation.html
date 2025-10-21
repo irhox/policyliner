@@ -8,7 +8,7 @@
   </mat-form-field>
   <div>
   <mat-checkbox formControlName="useDefaultMetrics">Use Default Metrics</mat-checkbox>
-  <mat-checkbox formControlName="isMaterializedView">Create Materialized View</mat-checkbox>
+  <mat-checkbox formControlName="isMaterializedView">Use Static Masking</mat-checkbox>
   </div>
   <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
     {{ loading ? 'Submitting...' : 'Submit' }}

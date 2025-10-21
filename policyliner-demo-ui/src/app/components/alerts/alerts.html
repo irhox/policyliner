@@ -23,7 +23,9 @@
         }
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button (click)="resolveAlert(alert.id)">Resolve</button>
+        @if (!alert.isResolved) {
+          <button mat-button (click)="resolveAlert(alert.id)">Resolve</button>
+        }
         <button mat-raised-button routerLink="/alert-details/{{alert.id}}">Details</button>
       </mat-card-actions>
     </mat-card>

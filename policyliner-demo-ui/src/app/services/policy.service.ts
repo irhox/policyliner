@@ -16,6 +16,7 @@ export class PolicyService {
   private createPolicyFromStringUrl: string;
   private searchPoliciesUrl: string;
   private formGetPolicyByIdUrl = (policyId:string)=> environment.baseUrl + `/policy/${policyId}`;
+  private formDeactivatePolicyUrl = (policyId:string)=> environment.baseUrl + `/policy/deactivate/${policyId}`;
 
   constructor(private http: HttpClient) {
     this.createPolicyFromObjectUrl = environment.baseUrl + "/policy/create/object";
@@ -37,5 +38,9 @@ export class PolicyService {
 
   getPolicyById(policyId: string): Observable<PolicyDTO> {
     return this.http.get<PolicyDTO>(this.formGetPolicyByIdUrl(policyId));
+  }
+
+  deactivatePolicy(policyId: string): Observable<PolicyDTO> {
+    return this.http.put<PolicyDTO>(this.formDeactivatePolicyUrl(policyId), null);
   }
 }

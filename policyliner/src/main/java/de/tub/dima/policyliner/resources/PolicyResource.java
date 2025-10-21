@@ -67,5 +67,12 @@ public class PolicyResource {
         return Response.ok(createdPolicy).build();
     }
 
+    @PUT
+    @Path("/deactivate/{policyId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public PolicyDTO deactivatePolicy(@PathParam("policyId") String policyId) {
+        return policyService.deactivatePolicy(policyId);
+    }
+
 
 }

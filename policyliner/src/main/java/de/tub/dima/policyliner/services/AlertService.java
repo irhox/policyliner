@@ -43,8 +43,11 @@ public class AlertService {
     @Transactional
     public AlertDTO resolveAlert(String alertId) {
         Alert alert = alertRepository.findById(alertId);
-        alert.isResolved = true;
-        alert.resolvedAt = LocalDateTime.now();
+        if (alert == null) throw new RuntimeException("No alert with id " + alertId);
+        if (!alert.isResolved) {
+            alert.isResolved = true;
+            alert.resolvedAt = LocalDateTime.now();
+        }
         Alert.getEntityManager().merge(alert);
         return convertToAlertDTO(alert);
     }

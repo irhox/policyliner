@@ -12,7 +12,7 @@
     @for (policy of policies; track policy.id){
       <mat-card class="policy-card">
         <mat-card-header>
-          <mat-card-title>{{policy.viewName}}</mat-card-title>
+          <mat-card-title>{{policy.viewName ? policy.viewName : policy.materializedViewName}}</mat-card-title>
           <mat-card-subtitle>{{policy.id}}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>

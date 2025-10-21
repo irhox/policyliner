@@ -77,6 +77,11 @@
       </mat-card-content>
 
       <mat-card-actions>
+        @if (policy.status === 'ACTIVE') {
+          <button mat-raised-button color="warn" (click)="deactivatePolicy()">
+            Deactivate
+          </button>
+        }
         <button mat-button color="accent" routerLink="/policies">Back To Policies Overview</button>
       </mat-card-actions>
     </mat-card>

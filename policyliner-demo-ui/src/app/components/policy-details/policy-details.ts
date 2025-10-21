@@ -60,4 +60,8 @@ export class PolicyDetails implements OnInit {
       }
     )
   }
+
+  deactivatePolicy() {
+    if (this.policyId) this.policyService.deactivatePolicy(this.policyId).subscribe(() =>{window.location.reload()} );
+  }
 }

@@ -17,6 +17,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -116,7 +117,7 @@ public class PolicyService {
         return convertToPolicyDTO(policyRepository.findById(policyId));
     }
 
-    // TODO: Implement sorting and filtering
+    // TODO: Implement sorting
     public PagedResponseDTO<PolicyDTO> searchPolicies(SearchDTO searchDTO) {
         PanacheQuery<Policy> policyQuery;
         if (Objects.equals(searchDTO.getBooleanFilter(), PolicyStatus.ACTIVE.name()) ||
@@ -135,6 +136,19 @@ public class PolicyService {
                 .toList();
 
         return createPagedResponseDTO(policyList, searchDTO, policyQuery.count());
+    }
+
+    @Transactional
+    public PolicyDTO deactivatePolicy(String policyId) {
+        Policy policy = policyRepository.findById(policyId);
+        if (policy == null) throw new RuntimeException("No policy with id " + policyId);
+
+        if (policy.status == PolicyStatus.ACTIVE) {
+            policy.status = PolicyStatus.INACTIVE;
+            policy.deactivatedAt = LocalDateTime.now();
+        }
+        Policy.getEntityManager().merge(policy);
+        return convertToPolicyDTO(policy);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
