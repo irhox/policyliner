@@ -5,7 +5,6 @@ import de.tub.dima.policyliner.dto.CreatePolicyDTO;
 import de.tub.dima.policyliner.dto.QueryResultsComparisonDTO;
 import de.tub.dima.policyliner.dto.TableInfoDTO;
 import de.tub.dima.policyliner.dto.ViewAttributeDTO;
-import de.tub.dima.policyliner.entities.SampleUniquenessReport;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -87,6 +86,16 @@ public class DataDBService {
         return resultList.stream()
                 .map(list ->
                         new TableInformation(list.getFirst(), list.get(1)))
+                .toList();
+    }
+
+    public List<TableColumn> getTableByName(String tableName) {
+        String nativeQuery = "SELECT table_name as tableName, column_name as columnName FROM information_schema.columns WHERE table_schema = 'public' and table_name = '%s';"
+                .formatted(tableName);
+        List<List<String>> resultList = em.createNativeQuery(nativeQuery, List.class).getResultList();
+        return resultList.stream()
+                .map(list ->
+                        new TableColumn(list.getFirst(), list.get(1)))
                 .toList();
     }
 
@@ -199,29 +208,5 @@ public class DataDBService {
         long query2CountResult = (long) query2Count.getResultList().getFirst();
 
         return new QueryResultsComparisonDTO(differenceCount1, differenceCount2, query1CountResult, query2CountResult);
-    }
-
-
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public SampleUniquenessReport getSampleUniquenessReportOfTable(String viewName, List<String> columns) {
-        String columnString = String.join(",", columns);
-        String queryString = """
-                WITH eq AS (
-                    SELECT %s, COUNT(*) AS cnt
-                    FROM (SELECT %s FROM %s
-                    ORDER BY RANDOM()
-                    LIMIT 1000000
-                    ) AS sample
-                    GROUP BY %s
-                )
-                SELECT
-                    SUM(CASE WHEN cnt = 1 THEN 1 ELSE 0 END) AS uniqueRowCount,
-                    SUM(cnt) AS totalRowCount,
-                    SUM(CASE WHEN cnt = 1 THEN 1 ELSE 0 END) * 1.0 / SUM(cnt) AS uniquenessRatio
-                FROM eq;
-                """.formatted(columnString, columnString, viewName, columnString);
-
-        Query query = em.createNativeQuery(queryString, SampleUniquenessReport.class);
-        return (SampleUniquenessReport) query.getSingleResult();
     }
 }

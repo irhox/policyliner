@@ -1,13 +1,13 @@
 package de.tub.dima.policyliner.services;
 
-import de.tub.dima.policyliner.constants.AlertSeverity;
-import de.tub.dima.policyliner.constants.AlertType;
-import de.tub.dima.policyliner.constants.MetricSeverity;
 import de.tub.dima.policyliner.constants.PolicyStatus;
 import de.tub.dima.policyliner.database.data.DataDBService;
-import de.tub.dima.policyliner.database.policyliner.*;
+import de.tub.dima.policyliner.database.policyliner.Alert;
+import de.tub.dima.policyliner.database.policyliner.Policy;
+import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
 import de.tub.dima.policyliner.dto.*;
-import de.tub.dima.policyliner.entities.SampleUniquenessReport;
+import de.tub.dima.policyliner.services.metrics.DeltaPresenceService;
+import de.tub.dima.policyliner.services.metrics.UniquenessEstimationService;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
 import io.quarkus.panache.common.Page;
@@ -29,20 +29,20 @@ public class PolicyService {
     private final PolicyRepository policyRepository;
     private final DataDBService dataDBService;
     private final UniquenessEstimationService uniquenessEstimationService;
-    private final PrivacyMetricRepository privacyMetricRepository;
+    private final DeltaPresenceService deltaPresenceService;
     private final PrivacyMetricValuesService privacyMetricValuesService;
 
     public PolicyService(
             PolicyRepository policyRepository,
             DataDBService dataDBService,
             UniquenessEstimationService uniquenessEstimationService,
-            PrivacyMetricRepository privacyMetricRepository,
-            PrivacyMetricValuesService privacyMetricValuesService) {
+            PrivacyMetricValuesService privacyMetricValuesService,
+            DeltaPresenceService deltaPresenceService) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
         this.uniquenessEstimationService = uniquenessEstimationService;
-        this.privacyMetricRepository = privacyMetricRepository;
         this.privacyMetricValuesService = privacyMetricValuesService;
+        this.deltaPresenceService = deltaPresenceService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
@@ -58,58 +58,10 @@ public class PolicyService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void evaluateDisclosurePolicies() {
-        List<String> activePolicyViewNames = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().map(p -> p.viewName).toList();
-        for (String viewName : activePolicyViewNames) {
-            Policy currentPolicy = policyRepository.findByViewName(viewName).stream().findFirst().orElse(null);
-            if (currentPolicy == null) continue;
-            List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(currentPolicy.getId());
-            PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
-                    filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.LOWER_LIMIT))
-                    .findFirst().orElse(null);
-            PrivacyMetric upperUniquenessRatio = policyPrivacyMetrics.stream()
-                    .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.UPPER_LIMIT))
-                    .findFirst().orElse(null);
-            PrivacyMetric middleUniquenessRatio = policyPrivacyMetrics.stream()
-                    .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
-                    .findFirst().orElse(null);
-            if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) {
-                Log.warn("No privacy metrics found for policy " + currentPolicy.id);
-                continue;
-            }
-            SampleUniquenessReport report = uniquenessEstimationService.computeMetricForTable(viewName);
-            if (upperUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
-                Alert newAlert = new Alert();
-                newAlert.type = AlertType.POLICY;
-                newAlert.severity = AlertSeverity.SEVERE;
-                newAlert.message = """ 
-                        Policy with view %s has a high uniqueness ratio of %.3f.
-                        This is a cause for concern and should be reviewed. The view columns should most likely be generalized.
-                        """.formatted(report.getViewName(), report.getUniquenessRatio());
-                newAlert.persist();
-                currentPolicy.alerts.add(newAlert);
-            } else if (middleUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(middleUniquenessRatio.value)) {
-                Alert newAlert = new Alert();
-                newAlert.type = AlertType.POLICY;
-                newAlert.severity = AlertSeverity.WARNING;
-                newAlert.message = """ 
-                        Policy with view %s has a high uniqueness ratio of %.3f.
-                        Depending on the sensitivity of the data, this may be a cause for concern and should be reviewed.
-                        """.formatted(report.getViewName(), report.getUniquenessRatio());
-                newAlert.persist();
-                currentPolicy.alerts.add(newAlert);
-            } else if (lowerUniquenessRatio != null && report.getUniquenessRatio().doubleValue() < Double.parseDouble(lowerUniquenessRatio.value)) {
-                Alert newAlert = new Alert();
-                newAlert.type = AlertType.POLICY;
-                newAlert.severity = AlertSeverity.INFO;
-                newAlert.message = """ 
-                        Policy with view %s has a low uniqueness ratio of %.3f.
-                        Please review the generalization / masking of the data in this view.
-                        The usability of the data can most likely be improved.
-                """.formatted(report.getViewName(), report.getUniquenessRatio());
-                newAlert.persist();
-                currentPolicy.alerts.add(newAlert);
-            }
-            Policy.getEntityManager().merge(currentPolicy);
+        List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().toList();
+        for (Policy currentPolicy : activePolicies) {
+            uniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy);
+            deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy);
         }
     }
 

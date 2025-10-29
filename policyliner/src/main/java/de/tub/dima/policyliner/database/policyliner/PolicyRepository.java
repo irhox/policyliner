@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class PolicyRepository implements PanacheRepository<Policy> {
@@ -16,8 +17,8 @@ public class PolicyRepository implements PanacheRepository<Policy> {
         return find("id", id).firstResult();
     }
 
-    public List<Policy> findByViewName(String viewName) {
-        return list("viewName", viewName);
+    public Optional<Policy> findByViewName(String viewName) {
+        return find("viewName LIKE ?1 OR materializedViewName LIKE ?1", viewName).firstResultOptional();
     }
 
     public List<Policy> findByStatus(PolicyStatus status) {
