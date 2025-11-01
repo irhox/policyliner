@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
 
@@ -17,6 +18,9 @@ public class UniquenessEstimationCalculator {
     @PersistenceUnit("data")
     EntityManager em;
 
+    @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "1000000")
+    int sampleSizeLimit;
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public SampleUniquenessReport getSampleUniquenessReportOfTable(String viewName, List<String> columns) {
         String columnString = String.join(",", columns);
@@ -25,7 +29,7 @@ public class UniquenessEstimationCalculator {
                     SELECT %s, COUNT(*) AS cnt
                     FROM (SELECT %s FROM %s
                     ORDER BY RANDOM()
-                    LIMIT 1000000
+                    LIMIT %d
                     ) AS sample
                     GROUP BY %s
                 )
@@ -34,7 +38,7 @@ public class UniquenessEstimationCalculator {
                     SUM(cnt) AS totalRowCount,
                     SUM(CASE WHEN cnt = 1 THEN 1 ELSE 0 END) * 1.0 / SUM(cnt) AS uniquenessRatio
                 FROM eq;
-                """.formatted(columnString, columnString, viewName, columnString);
+                """.formatted(columnString, columnString, viewName, sampleSizeLimit, columnString);
 
         Query query = em.createNativeQuery(queryString, SampleUniquenessReport.class);
         return (SampleUniquenessReport) query.getSingleResult();

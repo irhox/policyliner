@@ -95,7 +95,7 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
                 newAlert.message = """
-                        Policy with view %s has a high delta presence of %.3f.
+                        Policy with view %s has a delta presence of %.3f.
                         Depending on the sensitivity of the data, this may be a cause for concern and should be reviewed.
                 """.formatted(report.getViewName(), report.getMaxDeltaPresence());
                 newAlert.persist();

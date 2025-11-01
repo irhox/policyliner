@@ -3,11 +3,17 @@
     "columns": [
       "admissions_admissionid",
       "primarydiagnosiscode"
+    ],
+    "sensitiveAttributes": [
+      "primarydiagnosisdescription"
     ]
   },
   {"viewName": "labs_policy",
     "columns": [
       "to_date_to_char_labdatetime",
+      "labname"
+    ],
+    "sensitiveAttributes": [
       "labname"
     ]
   },
@@ -17,6 +23,9 @@
       "labnames",
       "admissions_admissionid",
       "primarydiagnosiscode"
+    ],
+    "sensitiveAttributes": [
+      "primarydiagnosisdescription"
     ]
   },
   {"viewName": "patients_admissions_diagnosis_labs_policy790",
@@ -24,13 +33,17 @@
       "admissions_admissionid",
       "primarydiagnosiscode",
       "labname"
+    ],
+    "sensitiveAttributes": [
+      "labname"
     ]
   },
   {"viewName": "patients_admissions_diagnosis_policy",
     "columns": [
       "admissions_admissionid",
       "primarydiagnosiscode"
-    ]
+    ],
+    "sensitiveAttributes": []
   },
   {"viewName": "patients_admissions_diagnosis_policy556",
     "columns": [
@@ -38,6 +51,9 @@
       "primarydiagnosiscode",
       "to_date_to_char_admissionstartdate",
       "to_date_to_char_admissionenddate"
+    ],
+    "sensitiveAttributes": [
+      "primarydiagnosisdescription"
     ]
   },
   {"viewName": "patients_admissions_policy",
@@ -47,6 +63,9 @@
       "to_date_to_char_admissionenddate",
       "patientgender",
       "patientmaritalstatus"
+    ],
+    "sensitiveAttributes": [
+      "patientmaritalstatus"
     ]
   },
   {"viewName": "patients_policy",
@@ -55,6 +74,10 @@
       "patientmaritalstatus",
       "patientrace",
       "patientdateofbirth"
+    ],
+    "sensitiveAttributes": [
+      "patientmaritalstatus",
+      "patientrace"
     ]
   }
 ]

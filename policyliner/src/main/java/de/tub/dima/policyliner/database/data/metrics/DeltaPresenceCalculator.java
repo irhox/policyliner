@@ -24,7 +24,7 @@ public class DeltaPresenceCalculator {
     double samplingRate;
 
 
-    @ConfigProperty(name = "policyLiner.delta-presence.sampling-limit", defaultValue = "1000000")
+    @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "1000000")
     int sampleSizeLimit;
 
     public DeltaPresenceCalculator() {}

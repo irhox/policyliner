@@ -7,6 +7,7 @@ import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
 import de.tub.dima.policyliner.dto.*;
 import de.tub.dima.policyliner.services.metrics.DeltaPresenceService;
+import de.tub.dima.policyliner.services.metrics.TClosenessService;
 import de.tub.dima.policyliner.services.metrics.UniquenessEstimationService;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
@@ -31,18 +32,21 @@ public class PolicyService {
     private final UniquenessEstimationService uniquenessEstimationService;
     private final DeltaPresenceService deltaPresenceService;
     private final PrivacyMetricValuesService privacyMetricValuesService;
+    private final TClosenessService tclosenessService;
 
     public PolicyService(
             PolicyRepository policyRepository,
             DataDBService dataDBService,
             UniquenessEstimationService uniquenessEstimationService,
             PrivacyMetricValuesService privacyMetricValuesService,
-            DeltaPresenceService deltaPresenceService) {
+            DeltaPresenceService deltaPresenceService,
+            TClosenessService tclosenessService) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
         this.uniquenessEstimationService = uniquenessEstimationService;
         this.privacyMetricValuesService = privacyMetricValuesService;
         this.deltaPresenceService = deltaPresenceService;
+        this.tclosenessService = tclosenessService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
@@ -62,6 +66,7 @@ public class PolicyService {
         for (Policy currentPolicy : activePolicies) {
             uniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy);
             deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy);
+            tclosenessService.evaluatePolicyAgainstMetric(currentPolicy);
         }
     }
 
