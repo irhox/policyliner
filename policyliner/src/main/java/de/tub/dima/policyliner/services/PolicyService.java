@@ -70,6 +70,15 @@ public class PolicyService {
         }
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void evaluateDisclosurePolicy(String policyId) {
+        Policy policy = policyRepository.findById(policyId);
+        if (policy == null) throw new RuntimeException("No policy with id " + policyId);
+        uniquenessEstimationService.evaluatePolicyAgainstMetric(policy);
+        deltaPresenceService.evaluatePolicyAgainstMetric(policy);
+        tclosenessService.evaluatePolicyAgainstMetric(policy);
+    }
+
     public PolicyDTO getPolicyById(String policyId) {
         return convertToPolicyDTO(policyRepository.findById(policyId));
     }
@@ -148,6 +157,7 @@ public class PolicyService {
         final CreatePolicyDTO disclosurePolicyInfo = new CreatePolicyDTO();
         disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
         disclosurePolicyInfo.setUseDefaultMetrics(disclosurePolicyDTO.getUseDefaultMetrics());
+        disclosurePolicyInfo.setEvaluatePolicyUponCreation(disclosurePolicyDTO.getEvaluatePolicyUponCreation());
 
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
         int whereIndex = disclosurePolicy.contains("where") ? disclosurePolicy.indexOf("where") : disclosurePolicy.length();

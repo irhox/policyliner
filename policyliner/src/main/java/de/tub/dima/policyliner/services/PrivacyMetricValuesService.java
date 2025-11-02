@@ -65,6 +65,14 @@ public class PrivacyMetricValuesService {
         }
     }
 
+    @Transactional
+    public boolean deletePrivacyMetricValue(String metricId) {
+        PrivacyMetric privacyMetric = privacyMetricRepository.findById(metricId).orElse(null);
+        if (privacyMetric == null) return false;
+        privacyMetricRepository.delete(privacyMetric);
+        return true;
+    }
+
     private PrivacyMetric convertDTOToPrivacyMetric(PrivacyMetricDTO privacyMetricDTO) {
         Optional<PrivacyMetric> newMetricOpt = privacyMetricRepository.findById(privacyMetricDTO.getId());
         PrivacyMetric metric = new PrivacyMetric();
@@ -93,4 +101,5 @@ public class PrivacyMetricValuesService {
                 privacyMetric.policy.id
         );
     }
+
 }

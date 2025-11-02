@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {DatePipe, KeyValuePipe, NgClass} from "@angular/common";
-import {MatButton} from "@angular/material/button";
+import {MatButton, MatIconButton} from "@angular/material/button";
 import {
   MatCard,
   MatCardActions,
@@ -15,6 +15,8 @@ import {PolicyDTO} from '../../dtos/policy.dto';
 import {PolicyService} from '../../services/policy.service';
 import {PrivacyMetricDTO} from '../../dtos/privacyMetric.dto';
 import {PrivacyMetricService} from '../../services/privacyMetric.service';
+import {MatIcon} from '@angular/material/icon';
+import {MatTooltip} from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-policy-details',
@@ -31,7 +33,10 @@ import {PrivacyMetricService} from '../../services/privacyMetric.service';
     MatChipListbox,
     RouterLink,
     NgClass,
-    KeyValuePipe
+    KeyValuePipe,
+    MatIconButton,
+    MatIcon,
+    MatTooltip
   ],
   templateUrl: './policy-details.html',
   standalone: true,
@@ -64,4 +69,14 @@ export class PolicyDetails implements OnInit {
   deactivatePolicy() {
     if (this.policyId) this.policyService.deactivatePolicy(this.policyId).subscribe(() =>{window.location.reload()} );
   }
+
+  protected deleteMetric(metricId: string | undefined, events: MouseEvent) {
+    events.stopPropagation();
+    if (metricId) {
+        this.privacyMetricService.deleteMetric(metricId).subscribe(() => {
+          window.location.reload();
+        });
+    }
+  }
+
 }

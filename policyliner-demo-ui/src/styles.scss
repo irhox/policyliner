@@ -88,3 +88,15 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     outline-color: darkred,
   ));
 }
+
+.error-snackbar {
+  .mat-mdc-snack-bar-action {
+    color: darkgray !important;
+  }
+  .mdc-snackbar__surface {
+    background-color: darkred !important;
+  }
+  .mat-mdc-snack-bar-label {
+    color: white !important;
+  }
+}

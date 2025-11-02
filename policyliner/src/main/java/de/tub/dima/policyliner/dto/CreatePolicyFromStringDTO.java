@@ -4,11 +4,13 @@ public class CreatePolicyFromStringDTO {
     private String policy;
     private Boolean isMaterializedView;
     private Boolean useDefaultMetrics;
+    private Boolean evaluatePolicyUponCreation;
 
-    public CreatePolicyFromStringDTO(String policy, Boolean isMaterializedView, Boolean useDefaultMetrics) {
+    public CreatePolicyFromStringDTO(String policy, Boolean isMaterializedView, Boolean useDefaultMetrics, Boolean evaluatePolicyUponCreation) {
         this.policy = policy;
         this.isMaterializedView = isMaterializedView;
         this.useDefaultMetrics = useDefaultMetrics;
+        this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
     }
 
 
@@ -30,5 +32,12 @@ public class CreatePolicyFromStringDTO {
     }
     public void setUseDefaultMetrics(Boolean useDefaultMetrics) {
         this.useDefaultMetrics = useDefaultMetrics;
+    }
+
+    public Boolean getEvaluatePolicyUponCreation() {
+        return evaluatePolicyUponCreation;
+    }
+    public void setEvaluatePolicyUponCreation(Boolean evaluatePolicyUponCreation) {
+        this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
     }
 }

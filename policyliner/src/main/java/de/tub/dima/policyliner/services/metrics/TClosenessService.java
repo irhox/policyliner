@@ -47,10 +47,10 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
             quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
         }
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
-        if (identifier.isPresent()) {
+        if (identifier.isPresent() && identifier.get().getSensitiveAttributes() != null) {
             return calculator.getTClosenessReportOfTable(tableName, identifier.get().getColumns(), identifier.get().getSensitiveAttributes());
         } else {
-            Log.error("No quasi-identifier object found for view " + tableName);
+            Log.error("No quasi-identifier object or sensitive attributes found for view " + tableName);
             return null;
         }
     }
@@ -80,7 +80,10 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
             Instant start = Instant.now();
             TClosenessReports reports = computeMetricForTable(viewName);
             Instant end = Instant.now();
-
+            if (reports == null) {
+                Log.error("No TCloseness report found for view " + viewName);
+                return;
+            }
             for (TClosenessReport report : reports.getReports()) {
                 if (upperT != null && report != null && report.getMaxDistance().doubleValue() > Double.parseDouble(upperT.value)) {
                     Alert newAlert = new Alert();

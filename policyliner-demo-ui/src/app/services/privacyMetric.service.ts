@@ -10,7 +10,7 @@ import {Observable} from 'rxjs';
 export class PrivacyMetricService {
   private createPrivacyMetricUrl: string;
   private formGetPrivacyMetricsOfPolicyUrl = (policyId:string)=> environment.baseUrl + `/privacy-metric/of-policy/${policyId}`;
-  private formGetPrivacyMetricUrl = (privacyMetricId:string)=> environment.baseUrl + `/privacy-metric/${privacyMetricId}`;
+  private formPrivacyMetricIdUrls = (privacyMetricId:string)=> environment.baseUrl + `/privacy-metric/${privacyMetricId}`;
 
   constructor(private http: HttpClient) {
     this.createPrivacyMetricUrl = environment.baseUrl + "/privacy-metric/create";
@@ -25,6 +25,10 @@ export class PrivacyMetricService {
   }
 
   getPrivacyMetricById(privacyMetricId: string): Observable<PrivacyMetricDTO> {
-    return this.http.get<PrivacyMetricDTO>(this.formGetPrivacyMetricUrl(privacyMetricId));
+    return this.http.get<PrivacyMetricDTO>(this.formPrivacyMetricIdUrls(privacyMetricId));
+  }
+
+  deleteMetric(metricId: string): Observable<any> {
+    return this.http.delete<Observable<any>>(this.formPrivacyMetricIdUrls(metricId));
   }
 }

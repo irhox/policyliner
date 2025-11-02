@@ -29,7 +29,6 @@ public class QueryResource {
     @Path("/analyze")
     @Produces(MediaType.APPLICATION_JSON)
     public QueryResponseDTO analyzeQuery(QueryRequestDTO disclosureQueryDTO) {
-
         return queryService.analyzeQuery(disclosureQueryDTO);
     }
 

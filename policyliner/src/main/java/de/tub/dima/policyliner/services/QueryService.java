@@ -16,6 +16,7 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,7 +96,7 @@ public class QueryService {
                 newAlert.type = AlertType.OFFLINE_QUERY;
                 newAlert.severity = AlertSeverity.SEVERE;
                 newAlert.message = """
-                        Query (%s) and (%s) of User (%s) have equal results. Suspect of Data Reconstruction Attack.
+                        Query (%s) and (%s) of User (%s) have equal results. Suspect of Query Replay Attack.
                         """.formatted(currentDisclosureQuery.query, currentDisclosureQuery.query, currentDisclosureQuery.user.id);
                 newAlert.persist();
                 currentDisclosureQuery.alerts.add(newAlert);
@@ -116,7 +117,7 @@ public class QueryService {
                     newAlert.type = AlertType.OFFLINE_QUERY;
                     newAlert.severity = AlertSeverity.WARNING;
                     newAlert.message = """
-                        Query (%s) and (%s) of User (%s) have similar results with ratio: %s. Suspect of Data Reconstruction Attack.
+                        Query (%s) and (%s) of User (%s) have similar results with ratio: %s. Suspect of Query Replay Attack.
                         """.formatted(currentDisclosureQuery.query, currentDisclosureQuery.query, currentDisclosureQuery.user.id, resultsRatio);
                     newAlert.persist();
                     currentDisclosureQuery.alerts.add(newAlert);
@@ -142,9 +143,21 @@ public class QueryService {
 
     // TODO: Work In Progress
     @Transactional(Transactional.TxType.REQUIRED)
-    public QueryResponseDTO analyzeQuery(QueryRequestDTO disclosureQueryDTO) {
+    public QueryResponseDTO analyzeQuery(QueryRequestDTO disclosureQueryDTO){
         Log.info("Evaluating query of user: " + disclosureQueryDTO.getUserId());
         DisclosureQuery disclosureQuery = new DisclosureQuery();
+        List<String> activePolicyList = policyRepository.findByStatus(PolicyStatus.ACTIVE)
+                .stream().flatMap(p -> Stream.of(p.materializedViewName, p.viewName)).toList();
+        Set<String> currentQueryTableNames;
+        try {
+            currentQueryTableNames = queryParserService.getTableNames(disclosureQueryDTO.getQuery());
+        }catch (JSQLParserException e) {
+            throw new RuntimeException(e);
+        }
+        List<String> incorrectTableNames = currentQueryTableNames.stream().filter(n -> !activePolicyList.contains(n)).toList();
+        if (!incorrectTableNames.isEmpty()) {
+            throw new RuntimeException("The following table names are incorrect or the according policy is not active: " + incorrectTableNames + ".");
+        }
 
 
         // check if the user exists, if it doesn't, create the new user
@@ -168,16 +181,17 @@ public class QueryService {
         if (userQueries.isEmpty()) {
             Log.info("No previous queries by user: " + disclosureQueryDTO.getUserId() + " found");
             disclosureQuery.status = QueryStatus.APPROVED;
+            disclosureQuery.message = "No previous queries by user: " + disclosureQueryDTO.getUserId() + " found";
         } else {
             Log.info("Found " + userQueries.size() + " queries of user " + disclosureQueryDTO.getUserId());
-            // protect from data reconstruction attacks
+            // protect from query replay attacks
             if (userQueries.size() > 1) {
                 List<String> similarQueries = new ArrayList<>();
                 userQueries.forEach(q -> {
                     if (disclosureQueryDTO.getComparatorType() == QueryComparatorType.CUSTOM) {
                         double queryDifference;
                         try {
-                            queryDifference = checkDifferenceOfQueries(q.query, disclosureQuery.query);
+                            queryDifference = checkDifferenceOfQueries(q.query, disclosureQuery.query, currentQueryTableNames);
                         } catch (JSQLParserException e) {
                             throw new RuntimeException(e);
                         }
@@ -206,6 +220,7 @@ public class QueryService {
                 if (similarQueries.isEmpty()) {
                     Log.info("No similar queries found by user: " + disclosureQueryDTO.getUserId());
                     disclosureQuery.status = QueryStatus.APPROVED;
+                    disclosureQuery.message = "No similar queries found by user: " + disclosureQueryDTO.getUserId();
                 } else if (similarQueries.size() >= 10) {
                     Log.info("More than 10 similar queries found by user: " + disclosureQueryDTO.getUserId() + ". Denying query.");
                     disclosureQuery.message = "More than 10 similar queries found by user with id: " + disclosureQueryDTO.getUserId() + ". Denying query.";
@@ -246,7 +261,7 @@ public class QueryService {
                     String newTables = String.join(", ", newPolicyNameList);
                     String newQuery = disclosureQueryDTO.getQuery().replace(tablesString, " " + newTables + " ");
                     disclosureQuery.status = QueryStatus.MODIFIED;
-                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use materialized views in order to prevent Data Reconstruction attack.";
+                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use materialized views in order to prevent Query Replay attack.";
                     disclosureQuery.query = newQuery;
                     Log.info("Changed query of user: " + disclosureQueryDTO.getUserId() + " to: " + newQuery + ".");
                     // create an alert for a modified user
@@ -263,7 +278,7 @@ public class QueryService {
                 } else {
                     // create an alert for less than 3 similar queries
                     disclosureQuery.status = QueryStatus.SUSPECT;
-                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Suspect for Data Reconstruction Attack";
+                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Suspect for Query Replay Attack";
                     // create alert for a suspect user
                     Alert newAlert = new Alert();
                     newAlert.message = disclosureQuery.message;
@@ -307,7 +322,7 @@ public class QueryService {
     // if tables and columns have some similarities or are equal, where clause results are also considered;
     // if tables are totally different, the ratio is returned as 1;
     // if columns are totally different, the ratio is returned as 1;
-    private Double checkDifferenceOfQueries(String previousQuery, String currentQuery) throws JSQLParserException {
+    private Double checkDifferenceOfQueries(String previousQuery, String currentQuery, Set<String> currentQueryTableNames) throws JSQLParserException {
         double differentTableRatio = 0.0;
 
         if (previousQuery.equals(currentQuery)) {
@@ -322,18 +337,16 @@ public class QueryService {
             else return Stream.ofNullable(p.viewName);
         }).toList();
 
-        Set<String> currentTableSet = queryParserService.getTableNames(currentQuery);
-
-        Set<String> differentTables = currentTableSet.stream().filter(t -> !fullPreviousTableList.contains(t)).collect(Collectors.toSet());
+        Set<String> differentTables = currentQueryTableNames.stream().filter(t -> !fullPreviousTableList.contains(t)).collect(Collectors.toSet());
 
         if (previousQueryTables.equals(currentQueryTables) || differentTables.isEmpty()) {
-            return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableSet, currentTableSet);
+            return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableSet, currentQueryTableNames);
         } else {
-            differentTableRatio = (double) differentTables.size() / currentTableSet.size();
+            differentTableRatio = (double) differentTables.size() / currentQueryTableNames.size();
             if (differentTableRatio == 1) {
                 return 1.0;
             } else {
-                return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableSet, currentTableSet);
+                return compareTableColumnsAndWhereClauses(previousQuery, currentQuery, differentTableRatio, previousTableSet, currentQueryTableNames);
             }
         }
     }
@@ -393,7 +406,7 @@ public class QueryService {
                 disclosureQuery.status,
                 disclosureQuery.inspectionStatus,
                 disclosureQuery.message,
-                disclosureQuery.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity, (existing, replacement) -> existing)),
+                disclosureQuery.alerts != null ? disclosureQuery.alerts.stream().filter(a -> !a.isResolved).collect(Collectors.toMap(Alert::getId, a -> a.severity, (existing, replacement) -> existing)) : Map.of(),
                 disclosureQuery.createdAt);
     }
 }

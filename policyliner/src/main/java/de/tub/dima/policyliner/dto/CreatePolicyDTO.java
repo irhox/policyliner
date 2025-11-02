@@ -9,6 +9,7 @@ public class CreatePolicyDTO {
     private Boolean isMaterializedView;
     private String userRole;
     private Boolean useDefaultMetrics;
+    private Boolean evaluatePolicyUponCreation;
 
     public CreatePolicyDTO(
             String policyName,
@@ -16,13 +17,15 @@ public class CreatePolicyDTO {
             List<ViewAttributeDTO> columns,
             Boolean isMaterializedView,
             String userRole,
-            Boolean useDefaultMetrics) {
+            Boolean useDefaultMetrics,
+            Boolean evaluatePolicyUponCreation) {
         this.policyName = policyName;
         this.tables = tables;
         this.columns = columns;
         this.isMaterializedView = isMaterializedView;
         this.userRole = userRole;
         this.useDefaultMetrics = useDefaultMetrics;
+        this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
     }
 
     public CreatePolicyDTO() {
@@ -70,6 +73,13 @@ public class CreatePolicyDTO {
     }
     public void setUseDefaultMetrics(Boolean useDefaultMetrics) {
         this.useDefaultMetrics = useDefaultMetrics;
+    }
+
+    public Boolean getEvaluatePolicyUponCreation() {
+        return evaluatePolicyUponCreation;
+    }
+    public void setEvaluatePolicyUponCreation(Boolean evaluatePolicyUponCreation) {
+        this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
     }
 
     @Override

@@ -5,6 +5,7 @@ import de.tub.dima.policyliner.services.PrivacyMetricValuesService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
@@ -36,6 +37,19 @@ public class PrivacyMetricResource {
     @Produces(MediaType.APPLICATION_JSON)
     public PrivacyMetricDTO createOrUpdatePrivacyMetric(PrivacyMetricDTO privacyMetric){
         return privacyMetricService.createPrivacyMetricValue(privacyMetric);
+    }
+
+    @DELETE
+    @Path("/{metricId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deletePrivacyMetric(@PathParam("metricId") String metricId){
+        boolean deletedMetric = privacyMetricService.deletePrivacyMetricValue(metricId);
+
+        if(deletedMetric){
+            return Response.noContent().build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 
 

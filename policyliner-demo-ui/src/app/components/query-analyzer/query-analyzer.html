@@ -33,7 +33,16 @@
     <h2>Analysis Result: </h2>
     <div>
       <p>STATUS: {{queryResponseDTO.status}}</p>
+      <p>QUERY: {{queryResponseDTO.query}}</p>
       <p>MESSAGE: {{queryResponseDTO.message}}</p>
+      @if (queryResponseDTO.alertSeverityMap && queryResponseDTO.alertSeverityMap.size > 0) {
+        <p>ALERTS:</p>
+        <mat-chip-listbox>
+          @for (entry of queryResponseDTO.alertSeverityMap | keyvalue; track entry.key) {
+            <mat-chip class="{{entry.value.toLowerCase()}}-chip" routerLink="/alert-details/{{entry.key}}">{{ entry.key + " : " + entry.value }}</mat-chip>
+          }
+        </mat-chip-listbox>
+      }
     </div>
   </div>
 }

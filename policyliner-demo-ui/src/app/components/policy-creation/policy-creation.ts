@@ -32,6 +32,7 @@ export class PolicyCreation {
       policy: ['', Validators.required],
       isMaterializedView: [false],
       useDefaultMetrics: [false],
+      evaluatePolicyUponCreation: [false],
     });
   }
 

@@ -64,7 +64,16 @@
               @if (metrics && metrics.length > 0) {
                 <mat-chip-listbox>
                   @for (metric of metrics; track metric) {
-                    <mat-chip routerLink="/metric-details/{{metric.id}}">{{ metric.name + " : " + metric.value }}</mat-chip>
+                    <mat-chip routerLink="/metric-details/{{metric.id}}" class="metric-chip">
+                      {{ metric.name + " : " + metric.value }}
+                      <button matIconButton
+                              (click)="deleteMetric(metric.id, $event)"
+                              matTooltip="Delete Metric"
+                              matTooltipPosition="left"
+                      >
+                        <mat-icon>remove</mat-icon>
+                      </button>
+                    </mat-chip>
                   }
                   <mat-chip routerLink="/create-metric-for/{{policy.id}}">+</mat-chip>
                 </mat-chip-listbox>
