@@ -43,9 +43,11 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
 
     @Override
     @Transactional(Transactional.TxType.REQUIRED)
-    public SampleUniquenessReport computeMetricForTable(String tableName) {
-        if (quasiIdentifiers == null) {
+    public SampleUniquenessReport computeMetricForTable(String tableName, JsonQuasiIdentifier localQuasiIdentifier) {
+        if (quasiIdentifiers == null && localQuasiIdentifier == null) {
             quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifier != null) {
+            quasiIdentifiers = new JsonQuasiIdentifiers(List.of(localQuasiIdentifier));
         }
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent()) {
@@ -58,9 +60,11 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
 
     @Override
     @Transactional(Transactional.TxType.REQUIRED)
-    public List<SampleUniquenessReport> computeMetricForTables(List<String> tableNames) {
-        if (quasiIdentifiers == null) {
+    public List<SampleUniquenessReport> computeMetricForTables(List<String> tableNames, JsonQuasiIdentifiers localQuasiIdentifiers) {
+        if (quasiIdentifiers == null && localQuasiIdentifiers == null) {
             quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifiers != null) {
+            quasiIdentifiers = localQuasiIdentifiers;
         }
         List<SampleUniquenessReport> reports = new ArrayList<>();
 
@@ -82,7 +86,7 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
     }
 
     @Override
-    public void evaluatePolicyAgainstMetric(Policy policy) {
+    public void evaluatePolicyAgainstMetric(Policy policy, JsonQuasiIdentifiers localQuasiIdentifiers) {
         Log.info("Evaluating policy " + policy.id + " against uniqueness report");
         List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(policy.getId());
         PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
@@ -99,7 +103,12 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
         } else {
             String viewName = policy.viewName != null ? policy.viewName : policy.materializedViewName;
             Instant start = Instant.now();
-            SampleUniquenessReport report = computeMetricForTable(viewName);
+            SampleUniquenessReport report;
+            if (localQuasiIdentifiers == null) {
+                report = computeMetricForTable(viewName, null);
+            } else {
+                report = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
+            }
             Instant end = Instant.now();
 
             if (upperUniquenessRatio != null && report != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {

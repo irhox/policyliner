@@ -6,10 +6,24 @@
     <mat-label>Enter Policy Creation Statement</mat-label>
     <textarea matInput formControlName="policy" rows="5"></textarea>
   </mat-form-field>
+  @if (evaluatePolicyUponCreation) {
+    <mat-form-field appearance="fill" class="input-field">
+      <mat-label>Enter Policy Name</mat-label>
+      <input matInput formControlName="viewName"/>
+    </mat-form-field>
+    <mat-form-field appearance="fill" class="input-field">
+      <mat-label>Enter Policy Quasi Identifier Columns</mat-label>
+      <textarea matInput formControlName="columns" rows="1"></textarea>
+    </mat-form-field>
+    <mat-form-field appearance="fill" class="input-field">
+      <mat-label>Enter Policy Sensitive Attributes</mat-label>
+      <textarea matInput formControlName="sensitiveAttributes" rows="1"></textarea>
+    </mat-form-field>
+  }
   <div>
   <mat-checkbox formControlName="useDefaultMetrics">Use Default Metrics</mat-checkbox>
   <mat-checkbox formControlName="isMaterializedView">Use Static Masking</mat-checkbox>
-  <mat-checkbox formControlName="evaluatePolicyUponCreation">Evaluate Policy Upon Creation</mat-checkbox>
+  <mat-checkbox formControlName="evaluatePolicyUponCreation" (change)="toggleEvaluatePolicyUponCreation()">Evaluate Policy Upon Creation</mat-checkbox>
   </div>
   <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
     {{ loading ? 'Submitting...' : 'Submit' }}

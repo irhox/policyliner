@@ -19,6 +19,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,9 +43,11 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
 
 
     @Override
-    public TClosenessReports computeMetricForTable(String tableName) {
-        if (quasiIdentifiers == null) {
+    public TClosenessReports computeMetricForTable(String tableName, JsonQuasiIdentifier localQuasiIdentifier) {
+        if (quasiIdentifiers == null && localQuasiIdentifier == null) {
             quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifier != null) {
+            quasiIdentifiers = new JsonQuasiIdentifiers(List.of(localQuasiIdentifier));
         }
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent() && identifier.get().getSensitiveAttributes() != null) {
@@ -56,12 +59,33 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
     }
 
     @Override
-    public List<TClosenessReports> computeMetricForTables(List<String> tableNames) {
-        return List.of();
+    public List<TClosenessReports> computeMetricForTables(List<String> tableNames, JsonQuasiIdentifiers localQuasiIdentifiers) {
+        if (quasiIdentifiers == null && localQuasiIdentifiers == null) {
+            quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifiers != null) {
+            quasiIdentifiers = localQuasiIdentifiers;
+        }
+        List<TClosenessReports> reports = new ArrayList<>();
+
+        for (JsonQuasiIdentifier identifier : quasiIdentifiers.getQuasiIdentifiers()) {
+            if (tableNames.contains(identifier.getViewName())) {
+                try {
+                    TClosenessReports report = calculator.getTClosenessReportOfTable(
+                            identifier.getViewName(),
+                            identifier.getColumns(),
+                            identifier.getSensitiveAttributes()
+                    );
+                    reports.add(report);
+                } catch (Exception e) {
+                    Log.error("Failed to get sample uniqueness report for view: " + identifier.getViewName(), e);
+                }
+            }
+        }
+        return reports;
     }
 
     @Override
-    public void evaluatePolicyAgainstMetric(Policy policy) {
+    public void evaluatePolicyAgainstMetric(Policy policy, JsonQuasiIdentifiers localQuasiIdentifiers) {
         Log.info("Evaluating policy " + policy.id + " against TCloseness report");
         List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(policy.getId());
         PrivacyMetric lowerT = policyPrivacyMetrics.stream().
@@ -78,7 +102,12 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
         } else {
             String viewName = policy.viewName != null ? policy.viewName : policy.materializedViewName;
             Instant start = Instant.now();
-            TClosenessReports reports = computeMetricForTable(viewName);
+            TClosenessReports reports;
+            if (localQuasiIdentifiers == null) {
+                reports = computeMetricForTable(viewName, null);
+            } else {
+                reports = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
+            }
             Instant end = Instant.now();
             if (reports == null) {
                 Log.error("No TCloseness report found for view " + viewName);

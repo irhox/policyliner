@@ -6,6 +6,8 @@ import de.tub.dima.policyliner.database.policyliner.Alert;
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.database.policyliner.PolicyRepository;
 import de.tub.dima.policyliner.dto.*;
+import de.tub.dima.policyliner.entities.JsonQuasiIdentifier;
+import de.tub.dima.policyliner.entities.JsonQuasiIdentifiers;
 import de.tub.dima.policyliner.services.metrics.DeltaPresenceService;
 import de.tub.dima.policyliner.services.metrics.TClosenessService;
 import de.tub.dima.policyliner.services.metrics.UniquenessEstimationService;
@@ -64,19 +66,19 @@ public class PolicyService {
     public void evaluateDisclosurePolicies() {
         List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().toList();
         for (Policy currentPolicy : activePolicies) {
-            uniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy);
-            deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy);
-            tclosenessService.evaluatePolicyAgainstMetric(currentPolicy);
+            uniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy, null);
+            deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy, null);
+            tclosenessService.evaluatePolicyAgainstMetric(currentPolicy, null);
         }
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public void evaluateDisclosurePolicy(String policyId) {
+    public void evaluateDisclosurePolicy(String policyId, JsonQuasiIdentifier quasiIdentifier) {
         Policy policy = policyRepository.findById(policyId);
         if (policy == null) throw new RuntimeException("No policy with id " + policyId);
-        uniquenessEstimationService.evaluatePolicyAgainstMetric(policy);
-        deltaPresenceService.evaluatePolicyAgainstMetric(policy);
-        tclosenessService.evaluatePolicyAgainstMetric(policy);
+        uniquenessEstimationService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
+        deltaPresenceService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
+        tclosenessService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
     }
 
     public PolicyDTO getPolicyById(String policyId) {
@@ -158,6 +160,7 @@ public class PolicyService {
         disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
         disclosurePolicyInfo.setUseDefaultMetrics(disclosurePolicyDTO.getUseDefaultMetrics());
         disclosurePolicyInfo.setEvaluatePolicyUponCreation(disclosurePolicyDTO.getEvaluatePolicyUponCreation());
+        disclosurePolicyInfo.setQuasiIdentifier(disclosurePolicyDTO.getQuasiIdentifier());
 
         final String attributes = disclosurePolicy.substring(disclosurePolicy.indexOf("disclose")+8, disclosurePolicy.indexOf("from"));
         int whereIndex = disclosurePolicy.contains("where") ? disclosurePolicy.indexOf("where") : disclosurePolicy.length();
@@ -235,7 +238,11 @@ public class PolicyService {
                 });
 
         disclosurePolicyInfo.setColumns(dataMaskObj);
-        disclosurePolicyInfo.setPolicyName(String.join("_", tableNames) + "_policy");
+        if (disclosurePolicyInfo.getQuasiIdentifier().getViewName() != null) {
+            disclosurePolicyInfo.setPolicyName(disclosurePolicyInfo.getQuasiIdentifier().getViewName());
+        } else {
+            disclosurePolicyInfo.setPolicyName(String.join("_", tableNames) + "_policy");
+        }
 
         return disclosurePolicyInfo;
     }

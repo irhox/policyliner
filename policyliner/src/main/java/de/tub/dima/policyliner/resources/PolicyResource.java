@@ -55,7 +55,7 @@ public class PolicyResource {
         Log.info("Creating policy from object");
         PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
         if (createPolicyDTO.getEvaluatePolicyUponCreation()) {
-            policyService.evaluateDisclosurePolicy(createdPolicy.getId());
+            policyService.evaluateDisclosurePolicy(createdPolicy.getId(), createPolicyDTO.getQuasiIdentifier());
         }
         return Response.ok(createdPolicy).build();
     }
@@ -68,7 +68,7 @@ public class PolicyResource {
         Log.info("Creating policy from Mascara query string");
         PolicyDTO createdPolicy = policyService.createPolicy(createPolicyDTO);
         if (disclosurePolicyDTO.getEvaluatePolicyUponCreation()) {
-            policyService.evaluateDisclosurePolicy(createdPolicy.getId());
+            policyService.evaluateDisclosurePolicy(createdPolicy.getId(), disclosurePolicyDTO.getQuasiIdentifier());
         }
         return Response.ok(createdPolicy).build();
     }

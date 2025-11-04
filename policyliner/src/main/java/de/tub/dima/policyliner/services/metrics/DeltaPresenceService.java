@@ -17,6 +17,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,11 +41,12 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
     }
 
     @Override
-    public DeltaPresenceReport computeMetricForTable(String tableName) {
-        if (quasiIdentifiers == null) {
+    public DeltaPresenceReport computeMetricForTable(String tableName, JsonQuasiIdentifier localQuasiIdentifier) {
+        if (quasiIdentifiers == null && localQuasiIdentifier == null) {
             quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifier != null) {
+            quasiIdentifiers = new JsonQuasiIdentifiers(List.of(localQuasiIdentifier));
         }
-
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent()) {
                 return calculator.getDeltaPresenceReportOfTable(tableName, identifier.get().getColumns());
@@ -55,12 +57,34 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
     }
 
     @Override
-    public List<DeltaPresenceReport> computeMetricForTables(List<String> tableNames) {
-        return List.of();
+    public List<DeltaPresenceReport> computeMetricForTables(List<String> tableNames, JsonQuasiIdentifiers localQuasiIdentifiers) {
+        if (quasiIdentifiers == null && localQuasiIdentifiers == null) {
+            quasiIdentifiers = initializeQuasiIdentifiers(objectMapper);
+        } else if (localQuasiIdentifiers != null) {
+            quasiIdentifiers = localQuasiIdentifiers;
+        }
+
+        List<DeltaPresenceReport> reports = new ArrayList<>();
+
+        for (JsonQuasiIdentifier identifier : quasiIdentifiers.getQuasiIdentifiers()) {
+            if (tableNames.contains(identifier.getViewName())) {
+                try {
+                    DeltaPresenceReport report = calculator.getDeltaPresenceReportOfTable(
+                            identifier.getViewName(),
+                            identifier.getColumns()
+                    );
+                    report.setViewName(identifier.getViewName());
+                    reports.add(report);
+                } catch (Exception e) {
+                    Log.error("Failed to get delta presence report for view: " + identifier.getViewName(), e);
+                }
+            }
+        }
+        return reports;
     }
 
     @Override
-    public void evaluatePolicyAgainstMetric(Policy policy) {
+    public void evaluatePolicyAgainstMetric(Policy policy, JsonQuasiIdentifiers localQuasiIdentifiers) {
         Log.info("Evaluating policy " + policy.id + " against delta presence report");
         List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(policy.getId());
         PrivacyMetric lowerDeltaPresence = policyPrivacyMetrics.stream().
@@ -77,7 +101,12 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
         } else {
             String viewName = policy.viewName != null ? policy.viewName : policy.materializedViewName;
             Instant start = Instant.now();
-            DeltaPresenceReport report = computeMetricForTable(viewName);
+            DeltaPresenceReport report;
+            if (localQuasiIdentifiers == null) {
+                report = computeMetricForTable(viewName, null);
+            } else {
+                report = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
+            }
             Instant end = Instant.now();
 
             if (upperDeltaPresence != null && report != null && report.getMaxDeltaPresence().doubleValue() > Double.parseDouble(upperDeltaPresence.value)) {

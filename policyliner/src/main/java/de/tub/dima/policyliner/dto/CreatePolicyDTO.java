@@ -1,5 +1,7 @@
 package de.tub.dima.policyliner.dto;
 
+import de.tub.dima.policyliner.entities.JsonQuasiIdentifier;
+
 import java.util.List;
 
 public class CreatePolicyDTO {
@@ -10,6 +12,7 @@ public class CreatePolicyDTO {
     private String userRole;
     private Boolean useDefaultMetrics;
     private Boolean evaluatePolicyUponCreation;
+    private JsonQuasiIdentifier quasiIdentifier;
 
     public CreatePolicyDTO(
             String policyName,
@@ -18,7 +21,8 @@ public class CreatePolicyDTO {
             Boolean isMaterializedView,
             String userRole,
             Boolean useDefaultMetrics,
-            Boolean evaluatePolicyUponCreation) {
+            Boolean evaluatePolicyUponCreation,
+            JsonQuasiIdentifier quasiIdentifier) {
         this.policyName = policyName;
         this.tables = tables;
         this.columns = columns;
@@ -26,6 +30,7 @@ public class CreatePolicyDTO {
         this.userRole = userRole;
         this.useDefaultMetrics = useDefaultMetrics;
         this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
+        this.quasiIdentifier = quasiIdentifier;
     }
 
     public CreatePolicyDTO() {
@@ -80,6 +85,13 @@ public class CreatePolicyDTO {
     }
     public void setEvaluatePolicyUponCreation(Boolean evaluatePolicyUponCreation) {
         this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
+    }
+
+    public JsonQuasiIdentifier getQuasiIdentifier() {
+        return quasiIdentifier;
+    }
+    public void setQuasiIdentifier(JsonQuasiIdentifier quasiIdentifier) {
+        this.quasiIdentifier = quasiIdentifier;
     }
 
     @Override

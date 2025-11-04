@@ -6,6 +6,8 @@ import {PolicyService} from '../../services/policy.service';
 import {PolicyDTO} from '../../dtos/policy.dto';
 import {MatCheckbox} from '@angular/material/checkbox';
 import {Router} from '@angular/router';
+import {CreatePolicyFromStringDTO} from '../../dtos/createPolicyFromString.dto';
+import {QuasiIdentifierDTO} from '../../dtos/quasiIdentifier.dto';
 
 @Component({
   selector: 'app-policy-creation',
@@ -26,6 +28,7 @@ export class PolicyCreation {
   form: FormGroup;
   loading = false;
   policyDTO: PolicyDTO = new PolicyDTO();
+  evaluatePolicyUponCreation: boolean = false;
 
   constructor(private fb: FormBuilder, private policyService: PolicyService, private router: Router) {
     this.form = this.fb.group({
@@ -33,6 +36,9 @@ export class PolicyCreation {
       isMaterializedView: [false],
       useDefaultMetrics: [false],
       evaluatePolicyUponCreation: [false],
+      viewName: [''],
+      sensitiveAttributes: [''],
+      columns: [''],
     });
   }
 
@@ -41,7 +47,13 @@ export class PolicyCreation {
 
     this.loading = true;
     const body = this.form.getRawValue();
-    this.policyService.createPolicyFromString(body).subscribe({
+    const newPolicy = new CreatePolicyFromStringDTO(body);
+    let quasiIdentifierDTO = new QuasiIdentifierDTO(body);
+    quasiIdentifierDTO.sensitiveAttributes = body.sensitiveAttributes.split(",");
+    quasiIdentifierDTO.columns = body.columns.split(",");
+    newPolicy.quasiIdentifier = quasiIdentifierDTO;
+
+    this.policyService.createPolicyFromString(newPolicy).subscribe({
       next: (response) => {
         console.log('Success:', response);
         this.policyDTO = new PolicyDTO(response);
@@ -53,5 +65,9 @@ export class PolicyCreation {
         this.loading = false;
       }
     });
+  }
+
+  toggleEvaluatePolicyUponCreation() {
+    this.evaluatePolicyUponCreation = !this.evaluatePolicyUponCreation;
   }
 }
