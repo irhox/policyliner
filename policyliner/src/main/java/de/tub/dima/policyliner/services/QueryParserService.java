@@ -1,5 +1,6 @@
 package de.tub.dima.policyliner.services;
 
+import de.tub.dima.policyliner.database.data.DataDBService;
 import jakarta.enterprise.context.ApplicationScoped;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.util.TablesNamesFinder;
@@ -11,12 +12,26 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class QueryParserService {
 
+    private final DataDBService dataDBService;
+
+    public QueryParserService(DataDBService dataDBService) {
+        this.dataDBService = dataDBService;
+    }
+
     public Set<String> getTableNames(String query) throws JSQLParserException {
         return TablesNamesFinder.findTables(query);
     }
 
     public Set<String> getColumnNames(String query) {
         String columns = query.substring(query.indexOf("SELECT")+6, query.indexOf("FROM")).trim();
+        if (columns.trim().equals("*")) {
+            try {
+                Set<String> tableNames = getTableNames(query);
+                return dataDBService.getColumnNamesOfViews(tableNames);
+            } catch (JSQLParserException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return Arrays.stream(columns.split(","))
                 .map(c -> {
                     String columnName = c.trim();

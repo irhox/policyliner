@@ -14,10 +14,8 @@ import jakarta.transaction.Transactional;
 import net.sf.jsqlparser.JSQLParserException;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +51,7 @@ public class QueryService {
     @RunOnVirtualThread
     public void offlineQueryAnalysis() {
         Log.info("Offline Query Analysis started.");
+        Instant start = Instant.now();
         List<User> users = userRepository.listAll();
         for (User user : users) {
             List<DisclosureQuery> userQueries = disclosureQueryRepository.findNewQueriesByUserId(user.id);
@@ -60,7 +59,8 @@ public class QueryService {
                 compareUserQueryResults(i, userQueries);
             }
         }
-        Log.info("Offline Query Analysis finished.");
+        Instant end = Instant.now();
+        Log.info("Offline Query Analysis finished in " + (end.toEpochMilli() - start.toEpochMilli()) + " ms.");
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -70,9 +70,27 @@ public class QueryService {
         boolean isApproved = true;
         for (int j = i+1; j < userQueries.size(); j++) {
             DisclosureQuery prevDisclosureQuery = userQueries.get(j);
+            Set<String> prevTables;
+            Set<String> currentTables;
+            try {
+                prevTables = queryParserService.getTableNames(prevDisclosureQuery.query);
+                currentTables = queryParserService.getTableNames(currentDisclosureQuery.query);
+            } catch (JSQLParserException e) {
+                throw new RuntimeException(e);
+            }
+            Set<String> commonTables = new HashSet<>(prevTables);
+            commonTables.retainAll(currentTables);
+            if (!prevTables.equals(currentTables) && commonTables.isEmpty()) {
+                Log.info("Different tables in queries: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
+                continue;
+            }
             Set<String> iColumns = queryParserService.getColumnNames(currentDisclosureQuery.query);
             Set<String> jColumns = queryParserService.getColumnNames(prevDisclosureQuery.query);
             String sameColumns = " " + String.join(", ", iColumns.stream().filter(jColumns::contains).toList()) + " ";
+            if (sameColumns.trim().isEmpty()) {
+                Log.info("No columns in common between queries: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
+                continue;
+            }
             String query1 = currentDisclosureQuery.query.replace(
                     currentDisclosureQuery.query.substring(
                             currentDisclosureQuery.query.indexOf("SELECT")+6,
@@ -83,6 +101,42 @@ public class QueryService {
                             prevDisclosureQuery.query.indexOf("SELECT")+6,
                             prevDisclosureQuery.query.indexOf("FROM")),
                     sameColumns);
+            if (query1.contains("ORDER BY")) {
+                if (query1.contains("LIMIT")) {
+                    query1 = query1.replace(query1.substring(query1.indexOf("ORDER BY"), query1.indexOf("LIMIT")), " ");
+                } else if (query1.contains("limit")) {
+                    query1 = query1.replace(query1.substring(query1.indexOf("ORDER BY"), query1.indexOf("limit")), " ");
+                } else {
+                    query1 = query1.replace(query1.substring(query1.indexOf("ORDER BY")), " ");
+                }
+            }
+            if (query2.contains("ORDER BY")) {
+                if (query2.contains("LIMIT")) {
+                    query2 = query2.replace(query2.substring(query2.indexOf("ORDER BY"), query2.indexOf("LIMIT")), " ");
+                } else if (query2.contains("limit")) {
+                    query2 = query2.replace(query2.substring(query2.indexOf("ORDER BY"), query2.indexOf("limit")), " ");
+                } else {
+                    query2 = query2.replace(query2.substring(query2.indexOf("ORDER BY")), " ");
+                }
+            }
+            if (query1.contains("order by")) {
+                if (query1.contains("LIMIT")) {
+                    query1 = query1.replace(query1.substring(query1.indexOf("order by"), query1.indexOf("LIMIT")), " ");
+                } else if (query1.contains("limit")) {
+                    query1 = query1.replace(query1.substring(query1.indexOf("order by"), query1.indexOf("limit")), " ");
+                } else {
+                    query1 = query1.replace(query1.substring(query1.indexOf("order by")), " ");
+                }
+            }
+            if (query2.contains("order by")) {
+                if (query2.contains("LIMIT")) {
+                    query2 = query2.replace(query2.substring(query2.indexOf("order by"), query2.indexOf("LIMIT")), " ");
+                } else if (query2.contains("limit")) {
+                    query2 = query2.replace(query2.substring(query2.indexOf("order by"), query2.indexOf("limit")), " ");
+                } else {
+                    query2 = query2.replace(query2.substring(query2.indexOf("order by")), " ");
+                }
+            }
             QueryResultsComparisonDTO comparisonResults = dataDBService.compareWhereClauseResults(query1, query2);
             long diffCountSum = comparisonResults.getCurrentCount() + comparisonResults.getPreviousCount();
             long totalCountSum = comparisonResults.getCurrentTotalCount() + comparisonResults.getPreviousTotalCount();
@@ -101,7 +155,6 @@ public class QueryService {
                 newAlert.persist();
                 currentDisclosureQuery.alerts.add(newAlert);
                 prevDisclosureQuery.alerts.add(newAlert);
-
             } else if (totalCountSum - diffCountSum == 0) {
                 Log.info("Queries are totally different: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
             } else {
@@ -149,8 +202,9 @@ public class QueryService {
         List<String> activePolicyList = policyRepository.findByStatus(PolicyStatus.ACTIVE)
                 .stream().flatMap(p -> Stream.of(p.materializedViewName, p.viewName)).toList();
         Set<String> currentQueryTableNames;
+        final String currentQuery = disclosureQueryDTO.getQuery();
         try {
-            currentQueryTableNames = queryParserService.getTableNames(disclosureQueryDTO.getQuery());
+            currentQueryTableNames = queryParserService.getTableNames(currentQuery);
         }catch (JSQLParserException e) {
             throw new RuntimeException(e);
         }
@@ -170,14 +224,14 @@ public class QueryService {
             newUser.persist();
             Log.info("Created new user with id: " + disclosureQueryDTO.getUserId());
             disclosureQuery.status = QueryStatus.APPROVED;
-            disclosureQuery.query = disclosureQueryDTO.getQuery();
+            disclosureQuery.query = currentQuery;
             disclosureQuery.user = newUser;
             disclosureQuery.persist();
             return convertToQueryResponseDTO(disclosureQuery);
         }
         List<DisclosureQuery> userQueries = disclosureQueryRepository.findByUserId(disclosureQueryDTO.getUserId());
         disclosureQuery.user = queryUser;
-        disclosureQuery.query = disclosureQueryDTO.getQuery();
+        disclosureQuery.query = currentQuery;
         if (userQueries.isEmpty()) {
             Log.info("No previous queries by user: " + disclosureQueryDTO.getUserId() + " found");
             disclosureQuery.status = QueryStatus.APPROVED;
@@ -232,34 +286,37 @@ public class QueryService {
                     newAlert.type = AlertType.ONLINE_QUERY;
                     newAlert.isResolved = false;
                     newAlert.persist();
+                    if (disclosureQuery.alerts == null) {
+                        disclosureQuery.alerts = new ArrayList<>();
+                    }
                     disclosureQuery.alerts.add(newAlert);
                 } else if (similarQueries.size() >= 3) {
                     Log.info(similarQueries.size() + " similar queries found by user: " + disclosureQueryDTO.getUserId());
-                    String tablesString = disclosureQueryDTO.getQuery()
-                            .substring(
-                                    disclosureQueryDTO.getQuery().indexOf("FROM")+4,
-                                    disclosureQueryDTO.getQuery().contains("WHERE") ? disclosureQueryDTO.getQuery().indexOf("WHERE") : disclosureQueryDTO.getQuery().length());
-                    List<String> policyNameList = Stream.of(tablesString.split(","))
-                            .map(pt -> {
-                                String tableName = pt.trim();
-                                if (pt.contains("as")){
-                                    tableName = pt.substring(0, pt.indexOf("as")).trim();
-                                } else if (pt.contains("AS")) {
-                                    tableName = pt.substring(0, pt.indexOf("AS")).trim();
-                                }
-                                tableName = tableName.replaceAll(";", "");
-                                return tableName.trim();
-                            }).toList();
+                    int endTableStringIndex = 0;
+                    if (currentQuery.contains("GROUP BY") || currentQuery.contains("ORDER BY") || currentQuery.contains("LIMIT") || currentQuery.contains("WHERE")) {
+                        if (currentQuery.contains("WHERE")) {
+                            endTableStringIndex = currentQuery.indexOf("WHERE");
+                        } else if (currentQuery.contains("GROUP BY")) {
+                            endTableStringIndex = currentQuery.indexOf("GROUP BY");
+                        } else if (currentQuery.contains("ORDER BY")) {
+                            endTableStringIndex = currentQuery.indexOf("ORDER BY");
+                        } else if (currentQuery.contains("LIMIT")) {
+                            endTableStringIndex = currentQuery.indexOf("LIMIT");
+                        }
+                    } else {
+                         endTableStringIndex = currentQuery.length();
+                    }
+                    String tablesString = currentQuery.substring(currentQuery.indexOf("FROM")+4, endTableStringIndex);
 
-                    List<Policy> policyList = policyRepository.findByNames(policyNameList);
-                    if (policyList.isEmpty() || policyList.size() != policyNameList.size()) {
-                        throw new RuntimeException("Error while retrieving policies for policy name list: " + policyNameList + ".");
+                    List<Policy> policyList = policyRepository.findByNames(currentQueryTableNames);
+                    if (policyList.isEmpty() || policyList.size() != currentQueryTableNames.size()) {
+                        throw new RuntimeException("Error while retrieving policies for policy name list: " + currentQueryTableNames + ".");
                     }
                     List<Policy> nonMaterializedPolicies = policyList.stream().filter(p -> p.materializedViewName == null).toList();
                     nonMaterializedPolicies.forEach(policyService::createMaterializedViewForExistingPolicy);
                     List<String> newPolicyNameList = policyList.stream().map(p -> p.materializedViewName).toList();
                     String newTables = String.join(", ", newPolicyNameList);
-                    String newQuery = disclosureQueryDTO.getQuery().replace(tablesString, " " + newTables + " ");
+                    String newQuery = currentQuery.replace(tablesString, " " + newTables + " ");
                     disclosureQuery.status = QueryStatus.MODIFIED;
                     disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use materialized views in order to prevent Query Replay attack.";
                     disclosureQuery.query = newQuery;
