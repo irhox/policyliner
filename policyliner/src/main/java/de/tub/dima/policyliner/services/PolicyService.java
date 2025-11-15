@@ -9,8 +9,9 @@ import de.tub.dima.policyliner.dto.*;
 import de.tub.dima.policyliner.entities.JsonQuasiIdentifier;
 import de.tub.dima.policyliner.entities.JsonQuasiIdentifiers;
 import de.tub.dima.policyliner.services.metrics.DeltaPresenceService;
+import de.tub.dima.policyliner.services.metrics.PopulationUniquenessEstimationService;
+import de.tub.dima.policyliner.services.metrics.SampleUniquenessRatioService;
 import de.tub.dima.policyliner.services.metrics.TClosenessService;
-import de.tub.dima.policyliner.services.metrics.UniquenessEstimationService;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
 import io.quarkus.panache.common.Page;
@@ -31,24 +32,27 @@ public class PolicyService {
 
     private final PolicyRepository policyRepository;
     private final DataDBService dataDBService;
-    private final UniquenessEstimationService uniquenessEstimationService;
+    private final SampleUniquenessRatioService sampleUniquenessRatioService;
     private final DeltaPresenceService deltaPresenceService;
     private final PrivacyMetricValuesService privacyMetricValuesService;
     private final TClosenessService tclosenessService;
+    private final PopulationUniquenessEstimationService populationUniquenessEstimationService;
 
     public PolicyService(
             PolicyRepository policyRepository,
             DataDBService dataDBService,
-            UniquenessEstimationService uniquenessEstimationService,
+            SampleUniquenessRatioService sampleUniquenessRatioService,
             PrivacyMetricValuesService privacyMetricValuesService,
             DeltaPresenceService deltaPresenceService,
-            TClosenessService tclosenessService) {
+            TClosenessService tclosenessService,
+            PopulationUniquenessEstimationService populationUniquenessEstimationService) {
         this.policyRepository = policyRepository;
         this.dataDBService = dataDBService;
-        this.uniquenessEstimationService = uniquenessEstimationService;
+        this.sampleUniquenessRatioService = sampleUniquenessRatioService;
         this.privacyMetricValuesService = privacyMetricValuesService;
         this.deltaPresenceService = deltaPresenceService;
         this.tclosenessService = tclosenessService;
+        this.populationUniquenessEstimationService = populationUniquenessEstimationService;
     }
 
     @Scheduled(every = "{policy.evaluation.interval}")
@@ -66,9 +70,10 @@ public class PolicyService {
     public void evaluateDisclosurePolicies() {
         List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().toList();
         for (Policy currentPolicy : activePolicies) {
-            uniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy, null);
+            sampleUniquenessRatioService.evaluatePolicyAgainstMetric(currentPolicy, null);
             deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy, null);
             tclosenessService.evaluatePolicyAgainstMetric(currentPolicy, null);
+            populationUniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy, null);
         }
     }
 
@@ -76,9 +81,10 @@ public class PolicyService {
     public void evaluateDisclosurePolicy(String policyId, JsonQuasiIdentifier quasiIdentifier) {
         Policy policy = policyRepository.findById(policyId);
         if (policy == null) throw new RuntimeException("No policy with id " + policyId);
-        uniquenessEstimationService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
+        sampleUniquenessRatioService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
         deltaPresenceService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
         tclosenessService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
+        populationUniquenessEstimationService.evaluatePolicyAgainstMetric(policy, new JsonQuasiIdentifiers(List.of(quasiIdentifier)));
     }
 
     public PolicyDTO getPolicyById(String policyId) {

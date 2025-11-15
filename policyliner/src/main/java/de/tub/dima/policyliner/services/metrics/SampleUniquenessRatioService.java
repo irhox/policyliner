@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tub.dima.policyliner.constants.AlertSeverity;
 import de.tub.dima.policyliner.constants.AlertType;
 import de.tub.dima.policyliner.constants.MetricSeverity;
-import de.tub.dima.policyliner.database.data.metrics.UniquenessEstimationCalculator;
+import de.tub.dima.policyliner.constants.PrivacyMetricName;
+import de.tub.dima.policyliner.database.data.metrics.SampleUniquenessCalculator;
 import de.tub.dima.policyliner.database.policyliner.Alert;
 import de.tub.dima.policyliner.database.policyliner.Policy;
 import de.tub.dima.policyliner.database.policyliner.PrivacyMetric;
@@ -23,19 +24,19 @@ import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
-public class UniquenessEstimationService implements PrivacyMetricService<SampleUniquenessReport> {
+public class SampleUniquenessRatioService implements PrivacyMetricService<SampleUniquenessReport> {
 
     @Inject
     ObjectMapper objectMapper;
 
     private final PrivacyMetricRepository privacyMetricRepository;
-    private final UniquenessEstimationCalculator calculator;
+    private final SampleUniquenessCalculator calculator;
 
     private JsonQuasiIdentifiers quasiIdentifiers;
 
 
-    public UniquenessEstimationService(
-            UniquenessEstimationCalculator calculator,
+    public SampleUniquenessRatioService(
+            SampleUniquenessCalculator calculator,
             PrivacyMetricRepository privacyMetricRepository) {
         this.calculator = calculator;
         this.privacyMetricRepository = privacyMetricRepository;
@@ -51,7 +52,7 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
         }
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent()) {
-            return calculator.getSampleUniquenessReportOfTable(tableName, identifier.get().getColumns());
+            return calculator.getPrivacyMetricReportOfTable(tableName, identifier.get().getColumns(), List.of());
         } else {
             Log.error("No quasi-identifier object found for view " + tableName);
             return null;
@@ -71,9 +72,10 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
         for (JsonQuasiIdentifier identifier : quasiIdentifiers.getQuasiIdentifiers()) {
             if (tableNames.contains(identifier.getViewName())) {
                 try {
-                    SampleUniquenessReport report = calculator.getSampleUniquenessReportOfTable(
+                    SampleUniquenessReport report = calculator.getPrivacyMetricReportOfTable(
                             identifier.getViewName(),
-                            identifier.getColumns()
+                            identifier.getColumns(),
+                            List.of()
                     );
                     report.setViewName(identifier.getViewName());
                     reports.add(report);
@@ -90,13 +92,13 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
         Log.info("Evaluating policy " + policy.id + " against uniqueness report");
         List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(policy.getId());
         PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
-                filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.LOWER_LIMIT))
+                filter(p -> p.name.equals(PrivacyMetricName.UNIQUENESS_RATIO.getValue()) && p.metricSeverity.equals(MetricSeverity.LOWER_LIMIT))
                 .findFirst().orElse(null);
         PrivacyMetric upperUniquenessRatio = policyPrivacyMetrics.stream()
-                .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.UPPER_LIMIT))
+                .filter(p -> p.name.equals(PrivacyMetricName.UNIQUENESS_RATIO.getValue()) && p.metricSeverity.equals(MetricSeverity.UPPER_LIMIT))
                 .findFirst().orElse(null);
         PrivacyMetric middleUniquenessRatio = policyPrivacyMetrics.stream()
-                .filter(p -> p.name.equals("uniquenessRatio") && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
+                .filter(p -> p.name.equals(PrivacyMetricName.UNIQUENESS_RATIO.getValue()) && p.metricSeverity.equals(MetricSeverity.MIDDLE_VALUE))
                 .findFirst().orElse(null);
         if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) {
             Log.warn("No privacy metrics found for policy " + policy.id + ". Skipping uniqueness report evaluation.");
@@ -116,7 +118,7 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.SEVERE;
                 newAlert.message = """ 
-                        Policy with view %s has a high uniqueness ratio of %.3f.
+                        Policy with view %s has a high sample uniqueness ratio of %.6f.
                         This is a cause for concern and should be reviewed. The view columns should most likely be generalized.
                         """.formatted(viewName, report.getUniquenessRatio());
                 newAlert.persist();
@@ -126,8 +128,8 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
                 newAlert.message = """ 
-                        Policy with view %s has a high uniqueness ratio of %.3f.
-                        Depending on the sensitivity of the data, this may be a cause for concern and should be reviewed.
+                        Policy with view %s has a high sample uniqueness ratio of %.6f.
+                        Depending on the sensitivity of the data, this is a cause for concern and should be reviewed.
                         """.formatted(viewName, report.getUniquenessRatio());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
@@ -136,7 +138,7 @@ public class UniquenessEstimationService implements PrivacyMetricService<SampleU
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.INFO;
                 newAlert.message = """ 
-                        Policy with view %s has a low uniqueness ratio of %.3f.
+                        Policy with view %s has a low sample uniqueness ratio of %.6f.
                         Please review the generalization / masking of the data in this view.
                         The usability of the data can most likely be improved.
                 """.formatted(viewName, report.getUniquenessRatio());

@@ -58,10 +58,31 @@
     },
     {
       "name": "tCloseness",
-      "description": "The middle value of the tCloseness metric.\n If the tCloseness value is bigger than this limit but smaller than the upper limit, the data privacy must be checked and by the data officer and reviewed.",
+      "description": "The middle value of the tCloseness metric.\n If the tCloseness value is bigger than this limit but smaller than the upper limit, the data privacy must be checked by the data officer and reviewed.",
       "value": "0.3",
       "valueType": "double",
       "metricSeverity": "MIDDLE_VALUE"
+    },
+    {
+      "name": "populationUniquenessRatio",
+      "description": "The lower limit of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio is lower than this limit, there is room to improve data utility.",
+      "value": "0.001",
+      "valueType": "double",
+      "metricSeverity": "LOWER_LIMIT"
+    },
+    {
+      "name": "populationUniquenessRatio",
+      "description": "The middle value of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit but smaller than the upper limit, the data privacy must be checked by the data officer.",
+      "value": "0.1",
+      "valueType": "double",
+      "metricSeverity": "MIDDLE_VALUE"
+    },
+    {
+      "name": "populationUniquenessRatio",
+      "description": "The upper limit of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit, data privacy must be improved and data must be anonymized / generalized more.",
+      "value": "0.3",
+      "valueType": "double",
+      "metricSeverity": "UPPER_LIMIT"
     }
   ]
 }

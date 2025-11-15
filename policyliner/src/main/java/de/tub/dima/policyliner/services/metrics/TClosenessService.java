@@ -51,7 +51,7 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
         }
         Optional<JsonQuasiIdentifier> identifier = quasiIdentifiers.getQuasiIdentifiers().stream().filter(q -> q.getViewName().equals(tableName)).findFirst();
         if (identifier.isPresent() && identifier.get().getSensitiveAttributes() != null) {
-            return calculator.getTClosenessReportOfTable(tableName, identifier.get().getColumns(), identifier.get().getSensitiveAttributes());
+            return calculator.getPrivacyMetricReportOfTable(tableName, identifier.get().getColumns(), identifier.get().getSensitiveAttributes());
         } else {
             Log.error("No quasi-identifier object or sensitive attributes found for view " + tableName);
             return null;
@@ -70,7 +70,7 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
         for (JsonQuasiIdentifier identifier : quasiIdentifiers.getQuasiIdentifiers()) {
             if (tableNames.contains(identifier.getViewName())) {
                 try {
-                    TClosenessReports report = calculator.getTClosenessReportOfTable(
+                    TClosenessReports report = calculator.getPrivacyMetricReportOfTable(
                             identifier.getViewName(),
                             identifier.getColumns(),
                             identifier.getSensitiveAttributes()
@@ -141,7 +141,7 @@ public class TClosenessService implements PrivacyMetricService<TClosenessReports
                     newAlert.message = """
                             Policy with view %s has a low TCloseness value of %.3f on sensitive value %s.
                             Please review the generalization / masking of the data in this view.
-                            The usability of the data can most likely be improved.
+                            The data utility can most likely be improved.
                             """.formatted(report.getViewName(), report.getMaxDistance(), report.getSensitiveAttribute());
                     newAlert.persist();
                     policy.alerts.add(newAlert);

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Locale;
 
 @ApplicationScoped
-public class DeltaPresenceCalculator {
+public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPresenceReport> {
 
     @Inject
     @PersistenceUnit("data")
@@ -29,8 +29,9 @@ public class DeltaPresenceCalculator {
 
     public DeltaPresenceCalculator() {}
 
+    @Override
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public DeltaPresenceReport getDeltaPresenceReportOfTable(String viewName, List<String> columns) {
+    public DeltaPresenceReport getPrivacyMetricReportOfTable(String viewName, List<String> columns, List<String> sensitiveAttributes) {
         String viewColumnString = String.join(", ", columns);
 
         String queryString = String.format(Locale.US, """

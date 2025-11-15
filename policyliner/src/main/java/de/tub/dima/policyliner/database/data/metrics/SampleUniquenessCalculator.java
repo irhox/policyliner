@@ -12,7 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.util.List;
 
 @ApplicationScoped
-public class UniquenessEstimationCalculator {
+public class SampleUniquenessCalculator implements PrivacyMetricCalculator<SampleUniquenessReport> {
 
     @Inject
     @PersistenceUnit("data")
@@ -21,8 +21,9 @@ public class UniquenessEstimationCalculator {
     @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "1000000")
     int sampleSizeLimit;
 
+    @Override
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public SampleUniquenessReport getSampleUniquenessReportOfTable(String viewName, List<String> columns) {
+    public SampleUniquenessReport getPrivacyMetricReportOfTable(String viewName, List<String> columns, List<String> sensitiveAttributes) {
         String columnString = String.join(",", columns);
         String queryString = """
                 WITH eq AS (

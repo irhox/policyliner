@@ -3,6 +3,7 @@ package de.tub.dima.policyliner.constants;
 public enum PrivacyMetricName {
 
     UNIQUENESS_RATIO("uniquenessRatio"),
+    POPULATION_UNIQUENESS("populationUniquenessRatio"),
     T_CLOSENESS("tCloseness"),
     DELTA_PRESENCE("deltaPresence");
 

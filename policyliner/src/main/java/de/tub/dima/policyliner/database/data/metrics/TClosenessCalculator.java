@@ -15,7 +15,7 @@ import java.math.RoundingMode;
 import java.util.*;
 
 @ApplicationScoped
-public class TClosenessCalculator {
+public class TClosenessCalculator implements PrivacyMetricCalculator<TClosenessReports>{
 
     @Inject
     @PersistenceUnit("data")
@@ -24,8 +24,9 @@ public class TClosenessCalculator {
     @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "1000000")
     int sampleSizeLimit;
 
+    @Override
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public TClosenessReports getTClosenessReportOfTable(String viewName, List<String> columns, List<String> sensitiveAttributes) {
+    public TClosenessReports getPrivacyMetricReportOfTable(String viewName, List<String> columns, List<String> sensitiveAttributes) {
         String columnString = String.join(",", columns);
         List<TClosenessReport> tableReportList = new ArrayList<>();
 
