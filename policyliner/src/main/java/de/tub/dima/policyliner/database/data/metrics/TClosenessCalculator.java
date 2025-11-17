@@ -36,7 +36,7 @@ public class TClosenessCalculator implements PrivacyMetricCalculator<TClosenessR
 
             Query query = em.createNativeQuery(queryString);
             List<Object[]> results = query.getResultList();
-            TClosenessReport report = processTClosenessResults(viewName, columns, results, distribution, BigDecimal.valueOf(0.3), sensitiveAttribute);
+            TClosenessReport report = processTClosenessResults(viewName, columns, results, distribution, BigDecimal.valueOf(0.2), sensitiveAttribute);
             tableReportList.add(report);
         }
 
@@ -142,8 +142,7 @@ public class TClosenessCalculator implements PrivacyMetricCalculator<TClosenessR
             String qiGroup = entry.getKey();
             Map<String, BigDecimal> classDistribution = entry.getValue();
 
-            // Total Variation Distance
-            BigDecimal distance = calculateTotalVariationDistance(classDistribution, globalDistribution);
+            BigDecimal distance = calculateEfficientEMD(classDistribution, globalDistribution);
             distances.put(qiGroup, distance);
 
             if (distance.compareTo(maxDistance) > 0) {
@@ -172,24 +171,46 @@ public class TClosenessCalculator implements PrivacyMetricCalculator<TClosenessR
         );
     }
 
-    private BigDecimal calculateTotalVariationDistance(Map<String, BigDecimal> distribution1,
-                                                       Map<String, BigDecimal> distribution2) {
-        BigDecimal distance = BigDecimal.ZERO;
-
-        // Get all unique values from both distributions
+    private BigDecimal calculateEfficientEMD(Map<String, BigDecimal> distribution1,
+                                             Map<String, BigDecimal> distribution2) {
         Set<String> allValues = new HashSet<>();
         allValues.addAll(distribution1.keySet());
         allValues.addAll(distribution2.keySet());
+        List<String> orderedValues = new ArrayList<>(allValues);
+        Collections.sort(orderedValues);
+        int m = orderedValues.size();
 
-        // Calculate L1 distance
-        for (String value : allValues) {
-            BigDecimal prob1 = distribution1.getOrDefault(value, BigDecimal.ZERO);
-            BigDecimal prob2 = distribution2.getOrDefault(value, BigDecimal.ZERO);
-            distance = distance.add(prob1.subtract(prob2).abs());
+        if (m <= 1) {
+            return BigDecimal.ZERO;
         }
 
-        // Return Total Variation Distance = L1 / 2
-        return distance.divide(BigDecimal.valueOf(2), 6, RoundingMode.HALF_UP);
+        BigDecimal[] p = new BigDecimal[m];
+        BigDecimal[] q = new BigDecimal[m];
+
+        for (int i = 0; i < m; i++) {
+            String value = orderedValues.get(i);
+            p[i] = distribution1.getOrDefault(value, BigDecimal.ZERO);
+            q[i] = distribution2.getOrDefault(value, BigDecimal.ZERO);
+        }
+
+        // Efficient EMD Algorithm (Dosselmann et al.)
+        // EMD ← 0
+        BigDecimal emd = BigDecimal.ZERO;
+
+        // S ← 0  (initialize current sum)
+        BigDecimal sum = BigDecimal.ZERO;
+
+        // for i = 1 to m do
+        for (int i = 0; i < m; i++) {
+            // S ← S + (pi − qi)
+            sum = sum.add(p[i].subtract(q[i]));
+
+            // EMD ← EMD + |S|
+            emd = emd.add(sum.abs());
+        }
+
+        // EMD ← EMD/(m − 1)
+        return emd.divide(BigDecimal.valueOf(m - 1), 6, RoundingMode.HALF_UP);
     }
 
     private String addPrefixToColumns(List<String> columnList, String prefix) {

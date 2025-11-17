@@ -10,7 +10,7 @@
     {
       "name": "uniquenessRatio",
       "description": "The upper limit of the sample Uniqueness Ratio metric.\n If the uniquenessRatio is bigger than this limit, data privacy must be improved and data must be anonymized / generalized more.",
-      "value": "0.3",
+      "value": "0.01",
       "valueType": "double",
       "metricSeverity": "UPPER_LIMIT"
     },
@@ -45,21 +45,21 @@
     {
       "name": "tCloseness",
       "description": "The lower limit of the tCloseness metric.\n If the tCloseness value is lower than this limit, there is room to improve data utility.",
-      "value": "0.1",
+      "value": "0.05",
       "valueType": "double",
       "metricSeverity": "LOWER_LIMIT"
     },
     {
       "name": "tCloseness",
       "description": "The upper limit of the tCloseness metric.\n If the tCloseness value is bigger than this limit, data privacy must be improved and data must be anonymized / generalized more.",
-      "value": "0.5",
+      "value": "0.4",
       "valueType": "double",
       "metricSeverity": "UPPER_LIMIT"
     },
     {
       "name": "tCloseness",
       "description": "The middle value of the tCloseness metric.\n If the tCloseness value is bigger than this limit but smaller than the upper limit, the data privacy must be checked by the data officer and reviewed.",
-      "value": "0.3",
+      "value": "0.2",
       "valueType": "double",
       "metricSeverity": "MIDDLE_VALUE"
     },
@@ -73,14 +73,14 @@
     {
       "name": "populationUniquenessRatio",
       "description": "The middle value of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit but smaller than the upper limit, the data privacy must be checked by the data officer.",
-      "value": "0.1",
+      "value": "0.01",
       "valueType": "double",
       "metricSeverity": "MIDDLE_VALUE"
     },
     {
       "name": "populationUniquenessRatio",
       "description": "The upper limit of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit, data privacy must be improved and data must be anonymized / generalized more.",
-      "value": "0.3",
+      "value": "0.1",
       "valueType": "double",
       "metricSeverity": "UPPER_LIMIT"
     }
