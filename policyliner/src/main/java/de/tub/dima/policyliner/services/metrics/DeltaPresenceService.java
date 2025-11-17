@@ -110,8 +110,11 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 report = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
             }
             Instant end = Instant.now();
-
-            if (upperDeltaPresence != null && report != null && report.getMaxDeltaPresence().doubleValue() > Double.parseDouble(upperDeltaPresence.value)) {
+            if (report == null) {
+                Log.error("No delta presence report found for view " + viewName);
+                return;
+            }
+            if (upperDeltaPresence != null && report.getMaxDeltaPresence().doubleValue() > Double.parseDouble(upperDeltaPresence.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.SEVERE;
@@ -121,7 +124,7 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                         """.formatted(report.getViewName(), report.getMaxDeltaPresence());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
-            } else if (middleDeltaPresence != null && report != null && report.getMaxDeltaPresence().doubleValue() > Double.parseDouble(middleDeltaPresence.value)) {
+            } else if (middleDeltaPresence != null && report.getMaxDeltaPresence().doubleValue() > Double.parseDouble(middleDeltaPresence.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
@@ -131,7 +134,7 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 """.formatted(report.getViewName(), report.getMaxDeltaPresence());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
-            } else if (lowerDeltaPresence != null && report != null && report.getMaxDeltaPresence().doubleValue() < Double.parseDouble(lowerDeltaPresence.value)) {
+            } else if (lowerDeltaPresence != null && report.getMaxDeltaPresence().doubleValue() < Double.parseDouble(lowerDeltaPresence.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.INFO;

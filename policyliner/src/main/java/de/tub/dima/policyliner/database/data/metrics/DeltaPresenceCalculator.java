@@ -50,54 +50,65 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
                 ),
                 smoothed_frequencies AS (
                     SELECT %s,
-                    eq.eq_size,
-                    eq.eq_size::decimal AS sample_count,
+                    eq.eq_size AS eq_size,
                     SUM(eq.eq_size) OVER () AS total_sample,
-                    (SUM(eq.eq_size) OVER () / %f) AS estimated_population,
                     CASE
                         WHEN eq.eq_size = 1 THEN
                             COALESCE(
-                                (SELECT num_classes_with_size * 2.0 FROM frequency_counts WHERE eq_size = 2) /
-                                NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 1), 0),
-                                1.0 ) / (SUM(eq.eq_size) OVER () / %f)
+                            2.0 * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 2) /
+                            NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 1), 0), 1.0)
                         WHEN eq.eq_size = 2 THEN
                             COALESCE(
-                                (SELECT num_classes_with_size * 3.0 FROM frequency_counts WHERE eq_size = 3) /
-                                NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 2), 0),
-                                2.0) / (SUM(eq.eq_size) OVER () / %f)
+                            3.0 * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 3) /
+                            NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 2), 0), 2.0)
                         ELSE
-                            (eq.eq_size::decimal + 1.0) / ((SUM(eq.eq_size) OVER () / %f) + COUNT(*) OVER ())
-                    END AS estimated_pop_frequency,
-                    eq.eq_size::decimal / NULLIF(SUM(eq.eq_size) OVER (), 0) AS observed_frequency
+                            COALESCE(
+                            (eq.eq_size + 1.0) * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = eq.eq_size + 1) /
+                            NULLIF((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = eq.eq_size), 0), eq.eq_size::decimal)
+                    END AS adjusted_count
                 FROM eq_classes eq
                 GROUP BY %s, eq.eq_size
                 ),
+                sample_frequencies AS (
+                    SELECT *, eq_size::decimal / NULLIF(total_sample, 0) AS observed_sample_frequency,
+                    adjusted_count / NULLIF(total_sample, 0) AS adjusted_sample_frequency
+                    FROM smoothed_frequencies
+                ),
+                population_frequencies AS (
+                    SELECT *, %f AS sampling_rate,
+                    total_sample / %f AS estimated_population,
+                    observed_sample_frequency / %f AS observed_pop_frequency,
+                    adjusted_sample_frequency / %f AS estimated_pop_frequency
+                    FROM sample_frequencies
+                ),
                 membership_inference AS (
                     SELECT
-                        eq_size, sample_count, total_sample, estimated_population,
-                        observed_frequency, estimated_pop_frequency, %f AS prior_in_dataset,
+                        eq_size, adjusted_count, total_sample, estimated_population,
+                        observed_sample_frequency, adjusted_sample_frequency,
+                        observed_pop_frequency, estimated_pop_frequency,
+                        %f AS prior_in_dataset,
                         CASE
                             WHEN estimated_pop_frequency > 0 THEN
-                                (%f * observed_frequency) /
+                                (%f * observed_sample_frequency) /
                                 NULLIF ((
-                                    %f * observed_frequency + (1.0 - %f) * estimated_pop_frequency
+                                    %f * observed_sample_frequency + (1.0 - %f) * estimated_pop_frequency
                                 ), 0)
                             ELSE 1.0
                         END AS posterior_in_dataset,
                         CASE
                             WHEN estimated_pop_frequency > 0 THEN
-                                ABS(((%f * observed_frequency) /
-                                NULLIF((%f * observed_frequency + (1.0 - %f) * estimated_pop_frequency), 0)) - %f)
+                                ABS(((%f * observed_sample_frequency) /
+                                NULLIF((%f * observed_sample_frequency + (1.0 - %f) * estimated_pop_frequency), 0)) - %f)
                             ELSE ABS(1.0 - %f)
                         END AS delta_presence
-                    FROM smoothed_frequencies
+                    FROM population_frequencies
                 ),
                 risk_assessment AS (
                     SELECT
                         eq_size,
                         posterior_in_dataset,
                         delta_presence,
-                        observed_frequency,
+                        observed_sample_frequency,
                         estimated_pop_frequency
                     FROM membership_inference
                 )
@@ -112,10 +123,9 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
         """, viewColumnString, viewName, sampleSizeLimit,
                 viewColumnString, viewColumnString,
                 addPrefixToColumns(columns, "eq"),
-                samplingRate, samplingRate, samplingRate, samplingRate,
                 addPrefixToColumns(columns, "eq"),
-                samplingRate,
-                samplingRate, samplingRate, samplingRate,
+                samplingRate, samplingRate, samplingRate, samplingRate,
+                samplingRate, samplingRate, samplingRate, samplingRate,
                 samplingRate, samplingRate, samplingRate, samplingRate, samplingRate);
 
 
