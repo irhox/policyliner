@@ -58,7 +58,7 @@ public class PopulationUniquenessReport {
                 viewName= %s
                 , estimatedPopulationUniquenessRatio= %.6f
                 , estimatorUsed= %s
-                , samplingRate= %.4f
+                , samplingRate= %.6f
                 , sampleSize= %d
                 , populationSize= %d
                 , totalEquivalenceClasses= %d

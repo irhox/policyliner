@@ -41,3 +41,18 @@ BEGIN
            repeat('X', length(code) - 2);
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION generalize_primarydiagnosiscode(code TEXT, char_count INTEGER)
+    RETURNS TEXT AS $$
+BEGIN
+    -- If string length <= char_count, return as-is
+    IF length(code) <= char_count THEN
+        RETURN code;
+    END IF;
+
+    -- Keep first char_count chars, replace the rest with 'X'
+    RETURN substring(code FROM 1 FOR char_count) ||
+           repeat('X', length(code) - char_count);
+END;
+$$ LANGUAGE plpgsql;

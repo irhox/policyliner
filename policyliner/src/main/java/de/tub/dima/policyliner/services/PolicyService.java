@@ -244,7 +244,7 @@ public class PolicyService {
                 });
 
         disclosurePolicyInfo.setColumns(dataMaskObj);
-        if (disclosurePolicyInfo.getQuasiIdentifier().getViewName() != null) {
+        if (disclosurePolicyInfo.getQuasiIdentifier() != null && disclosurePolicyInfo.getQuasiIdentifier().getViewName() != null) {
             disclosurePolicyInfo.setPolicyName(disclosurePolicyInfo.getQuasiIdentifier().getViewName());
         } else {
             disclosurePolicyInfo.setPolicyName(String.join("_", tableNames) + "_policy");

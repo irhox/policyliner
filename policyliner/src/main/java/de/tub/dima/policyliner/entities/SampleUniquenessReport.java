@@ -57,7 +57,7 @@ public class SampleUniquenessReport {
                 viewName= %s
                 , uniqueRowCount= %s
                 , totalRowCount= %s
-                , uniquenessRatio= %.3f
+                , uniquenessRatio= %.6f
                 }
                 """.formatted(viewName, uniqueRowCount, totalRowCount, uniquenessRatio.doubleValue());
     }
