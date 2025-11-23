@@ -1,5 +1,4 @@
 import {Routes} from '@angular/router';
-import {HomeComponent} from './components/home-component/home-component';
 import {PolicyCreation} from './components/policy-creation/policy-creation';
 import {QueryAnalyzer} from './components/query-analyzer/query-analyzer';
 import {Alerts} from './components/alerts/alerts';
@@ -14,7 +13,7 @@ import {CreateMetric} from './components/create-metric/create-metric';
 export const routes: Routes = [
   {
     path: '',
-    component: HomeComponent,
+    component: Policies,
   },
   {
     path: 'policy-creation',
@@ -39,10 +38,6 @@ export const routes: Routes = [
   {
     path: 'query-details/:id',
     component: QueryDetails,
-  },
-  {
-    path: 'policies',
-    component: Policies,
   },
   {
     path: 'policy-details/:id',
