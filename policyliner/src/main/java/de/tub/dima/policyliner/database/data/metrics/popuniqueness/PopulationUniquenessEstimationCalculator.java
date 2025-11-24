@@ -44,7 +44,7 @@ public class PopulationUniquenessEstimationCalculator implements PrivacyMetricCa
         double samplingRate = (double) sampleSize / populationSize;
 
         // Decision rule from Dankar et al. (2012)
-        if (samplingRate < 0.1) {
+        if (samplingRate <= 0.1) {
             return pitmanEstimator.getPitmanPopulationUniquenessReport(viewName, sampleSize, populationSize, eqFrequencyMap);
         } else {
             if (snbEstimator.converges(eqFrequencyMap)) {

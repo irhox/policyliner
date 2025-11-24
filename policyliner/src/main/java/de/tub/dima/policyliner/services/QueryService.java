@@ -194,7 +194,6 @@ public class QueryService {
         DisclosureQuery.getEntityManager().merge(currentDisclosureQuery);
     }
 
-    // TODO: Work In Progress
     @Transactional(Transactional.TxType.REQUIRED)
     public QueryResponseDTO analyzeQuery(QueryRequestDTO disclosureQueryDTO){
         Log.info("Evaluating query of user: " + disclosureQueryDTO.getUserId());
@@ -252,7 +251,7 @@ public class QueryService {
                         if (queryDifference < 0.3) {
                             similarQueries.add(q.query);
                         }
-                        Log.info("Query difference: " + queryDifference); // TODO: delete
+                        Log.info("Custom Query difference: " + queryDifference);
                     } else if (disclosureQueryDTO.getComparatorType() == QueryComparatorType.STRING) {
                         if (q.query.compareToIgnoreCase(disclosureQuery.query) == 0) {
                             similarQueries.add(q.query);
@@ -267,10 +266,7 @@ public class QueryService {
                         Log.info("Similarity: " + similarity + " Distance: " + distance + ".");
                     }
                 });
-                // TODO: delete
                 Log.info("Found " + similarQueries.size() + " similar queries by user: " + disclosureQueryDTO.getUserId());
-                Log.info("Similar queries: " + similarQueries);
-                /// /////////////////////
                 if (similarQueries.isEmpty()) {
                     Log.info("No similar queries found by user: " + disclosureQueryDTO.getUserId());
                     disclosureQuery.status = QueryStatus.APPROVED;
@@ -318,7 +314,7 @@ public class QueryService {
                     String newTables = String.join(", ", newPolicyNameList);
                     String newQuery = currentQuery.replace(tablesString, " " + newTables + " ");
                     disclosureQuery.status = QueryStatus.MODIFIED;
-                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use materialized views in order to prevent Query Replay attack.";
+                    disclosureQuery.message = "User: " + disclosureQueryDTO.getUserId() + " has submitted " + similarQueries.size() + " similar queries. Modified query to use static masking in order to prevent Query Replay attack.";
                     disclosureQuery.query = newQuery;
                     Log.info("Changed query of user: " + disclosureQueryDTO.getUserId() + " to: " + newQuery + ".");
                     // create an alert for a modified user
@@ -348,7 +344,7 @@ public class QueryService {
                     }
                     disclosureQuery.alerts.add(newAlert);
                 }
-            } else { // TODO: adjust for other types of attacks
+            } else {
                 disclosureQuery.status = QueryStatus.APPROVED;
             }
         }

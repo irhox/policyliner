@@ -59,14 +59,14 @@
     {
       "name": "populationUniquenessRatio",
       "description": "The middle value of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit but smaller than the upper limit, the data privacy must be checked by the data officer.",
-      "value": "0.0",
+      "value": "0.01",
       "valueType": "double",
       "metricSeverity": "MIDDLE_VALUE"
     },
     {
       "name": "populationUniquenessRatio",
       "description": "The upper limit of the population Uniqueness Ratio metric.\n If the populationUniquenessRatio value is bigger than this limit, data privacy must be improved and data must be anonymized / generalized more.",
-      "value": "0.01",
+      "value": "0.1",
       "valueType": "double",
       "metricSeverity": "UPPER_LIMIT"
     }

@@ -129,7 +129,7 @@ public class PolicyService {
     public PolicyDTO createPolicy(CreatePolicyDTO createPolicyDTO) {
         String policy = dataDBService.createPolicy(createPolicyDTO);
         Policy newPolicy = new Policy();
-        if (createPolicyDTO.getIsMaterializedView()) {
+        if (createPolicyDTO.getUseStaticMasking()) {
             newPolicy.materializedViewName = createPolicyDTO.getPolicyName();
         } else {
             newPolicy.viewName = createPolicyDTO.getPolicyName();
@@ -163,7 +163,7 @@ public class PolicyService {
     public CreatePolicyDTO parseDisclosurePolicyStatement(CreatePolicyFromStringDTO disclosurePolicyDTO) {
         String disclosurePolicy = disclosurePolicyDTO.getPolicy();
         final CreatePolicyDTO disclosurePolicyInfo = new CreatePolicyDTO();
-        disclosurePolicyInfo.setIsMaterializedView(disclosurePolicyDTO.getIsMaterializedView());
+        disclosurePolicyInfo.setUseStaticMasking(disclosurePolicyDTO.getUseStaticMasking());
         disclosurePolicyInfo.setUseDefaultMetrics(disclosurePolicyDTO.getUseDefaultMetrics());
         disclosurePolicyInfo.setEvaluatePolicyUponCreation(disclosurePolicyDTO.getEvaluatePolicyUponCreation());
         disclosurePolicyInfo.setQuasiIdentifier(disclosurePolicyDTO.getQuasiIdentifier());

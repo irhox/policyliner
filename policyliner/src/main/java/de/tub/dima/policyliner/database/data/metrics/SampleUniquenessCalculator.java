@@ -42,6 +42,8 @@ public class SampleUniquenessCalculator implements PrivacyMetricCalculator<Sampl
                 """.formatted(columnString, columnString, viewName, sampleSizeLimit, columnString);
 
         Query query = em.createNativeQuery(queryString, SampleUniquenessReport.class);
-        return (SampleUniquenessReport) query.getSingleResult();
+        SampleUniquenessReport report = (SampleUniquenessReport) query.getSingleResult();
+        report.setViewName(viewName);
+        return report;
     }
 }

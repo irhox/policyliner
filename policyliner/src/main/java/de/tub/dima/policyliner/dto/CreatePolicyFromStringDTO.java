@@ -4,14 +4,14 @@ import de.tub.dima.policyliner.entities.JsonQuasiIdentifier;
 
 public class CreatePolicyFromStringDTO {
     private String policy;
-    private Boolean isMaterializedView;
+    private Boolean useStaticMasking;
     private Boolean useDefaultMetrics;
     private Boolean evaluatePolicyUponCreation;
     private JsonQuasiIdentifier quasiIdentifier;
 
-    public CreatePolicyFromStringDTO(String policy, Boolean isMaterializedView, Boolean useDefaultMetrics, Boolean evaluatePolicyUponCreation, JsonQuasiIdentifier quasiIdentifier) {
+    public CreatePolicyFromStringDTO(String policy, Boolean useStaticMasking, Boolean useDefaultMetrics, Boolean evaluatePolicyUponCreation, JsonQuasiIdentifier quasiIdentifier) {
         this.policy = policy;
-        this.isMaterializedView = isMaterializedView;
+        this.useStaticMasking = useStaticMasking;
         this.useDefaultMetrics = useDefaultMetrics;
         this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
         this.quasiIdentifier = quasiIdentifier;
@@ -21,11 +21,11 @@ public class CreatePolicyFromStringDTO {
     public String getPolicy() {
         return policy;
     }
-    public Boolean getIsMaterializedView() {
-        return isMaterializedView;
+    public Boolean getUseStaticMasking() {
+        return useStaticMasking;
     }
-    public void setIsMaterializedView(Boolean isMaterializedView) {
-        this.isMaterializedView = isMaterializedView;
+    public void setUseStaticMasking(Boolean useStaticMasking) {
+        this.useStaticMasking = useStaticMasking;
     }
     public void setPolicy(String policy) {
         this.policy = policy;

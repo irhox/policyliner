@@ -119,7 +119,7 @@ public class DataDBService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public String createPolicy(CreatePolicyDTO createPolicyDTO) {
         Random random = new Random();
-        String viewType = createPolicyDTO.getIsMaterializedView() ? "MATERIALIZED VIEW" : "VIEW";
+        String viewType = createPolicyDTO.getUseStaticMasking() ? "MATERIALIZED VIEW" : "VIEW";
         // check if a view with the same name already exists
         List<MaterializedView> materializedViews = getMaterializedViews();
         if (materializedViews.stream().map(MaterializedView::getViewName).toList().contains(createPolicyDTO.getPolicyName())){

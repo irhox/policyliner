@@ -20,11 +20,11 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
     @PersistenceUnit("data")
     EntityManager em;
 
-    @ConfigProperty(name = "policyLiner.delta-presence.sampling-rate", defaultValue = "0.2")
-    double samplingRate;
+    @ConfigProperty(name = "policyLiner.delta-presence.prior-prob", defaultValue = "0.01")
+    double priorProbability;
 
 
-    @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "1000000")
+    @ConfigProperty(name = "policyLiner.privacy-metric.sampling-limit", defaultValue = "10000000")
     int sampleSizeLimit;
 
     public DeltaPresenceCalculator() {}
@@ -33,6 +33,7 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public DeltaPresenceReport getPrivacyMetricReportOfTable(String viewName, List<String> columns, List<String> sensitiveAttributes) {
         String viewColumnString = String.join(", ", columns);
+
 
         String queryString = String.format(Locale.US, """
                 WITH policy_sample AS (
@@ -44,64 +45,83 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
                     GROUP BY %s
                 ),
                 frequency_counts AS (
-                    SELECT eq_size, COUNT(*) AS num_classes_with_size
+                    SELECT eq_size AS r, COUNT(*) AS n_r
                     FROM eq_classes
                     GROUP BY eq_size
                 ),
-                smoothed_frequencies AS (
-                    SELECT %s,
-                    eq.eq_size AS eq_size,
-                    SUM(eq.eq_size) OVER () AS total_sample,
-                    CASE
-                        WHEN eq.eq_size = 1 THEN
-                            COALESCE(
-                            2.0 * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 2) /
-                            NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 1), 0), 1.0)
-                        WHEN eq.eq_size = 2 THEN
-                            COALESCE(
-                            3.0 * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 3) /
-                            NULLIF ((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = 2), 0), 2.0)
-                        ELSE
-                            COALESCE(
-                            (eq.eq_size + 1.0) * (SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = eq.eq_size + 1) /
-                            NULLIF((SELECT num_classes_with_size FROM frequency_counts WHERE eq_size = eq.eq_size), 0), eq.eq_size::decimal)
-                    END AS adjusted_count
-                FROM eq_classes eq
-                GROUP BY %s, eq.eq_size
+                sgt_smoothed AS (
+                    SELECT
+                        fc.r,
+                        fc.n_r,
+                        CASE
+                            WHEN fc.r = 1 THEN
+                                COALESCE(
+                                    2.0 * (SELECT n_r FROM frequency_counts WHERE r = 2) /
+                                    NULLIF(fc.n_r, 0),
+                                    0.5
+                                )
+                            WHEN fc.r = 2 THEN
+                                COALESCE(
+                                    3.0 * (SELECT n_r FROM frequency_counts WHERE r = 3) /
+                                    NULLIF(fc.n_r, 0),
+                                    1.5
+                                )
+                            WHEN fc.r <= 10 THEN
+                                COALESCE(
+                                    (fc.r + 1.0) * (SELECT n_r FROM frequency_counts WHERE r = fc.r + 1) /
+                                    NULLIF(fc.n_r, 0),
+                                    fc.r * (1.0 - 2.0/(fc.r + 1.0))
+                                )
+                            ELSE
+                                fc.r * (fc.r - 1.0) / (fc.r + 1.0)
+                        END AS r_star
+                    FROM frequency_counts fc
                 ),
-                sample_frequencies AS (
-                    SELECT *, eq_size::decimal / NULLIF(total_sample, 0) AS observed_sample_frequency,
-                    adjusted_count / NULLIF(total_sample, 0) AS adjusted_sample_frequency
-                    FROM smoothed_frequencies
+                sample_totals AS (
+                    SELECT SUM(eq_size) AS total_sample
+                    FROM eq_classes
                 ),
-                population_frequencies AS (
-                    SELECT *, %f AS sampling_rate,
-                    total_sample / %f AS estimated_population,
-                    observed_sample_frequency / %f AS observed_pop_frequency,
-                    adjusted_sample_frequency / %f AS estimated_pop_frequency
-                    FROM sample_frequencies
+                eq_classes_with_smoothing AS (
+                    SELECT
+                        %s,
+                        eq.eq_size AS r,
+                        COALESCE(sgt.r_star, eq.eq_size::decimal) AS r_star,
+                        st.total_sample,
+                        eq.eq_size::decimal / NULLIF(st.total_sample, 0) AS p_sample_raw,
+                        COALESCE(sgt.r_star, eq.eq_size::decimal) / NULLIF(st.total_sample, 0) AS p_sample_adjusted
+                    FROM eq_classes eq
+                    LEFT JOIN sgt_smoothed sgt ON eq.eq_size = sgt.r
+                    CROSS JOIN sample_totals st
                 ),
                 membership_inference AS (
                     SELECT
-                        eq_size, adjusted_count, total_sample, estimated_population,
-                        observed_sample_frequency, adjusted_sample_frequency,
-                        observed_pop_frequency, estimated_pop_frequency,
+                        r AS eq_size,
+                        r_star AS adjusted_count,
+                        total_sample,
                         %f AS prior_in_dataset,
+                        p_sample_raw AS observed_sample_frequency,
+                        p_sample_adjusted AS estimated_pop_frequency,
                         CASE
-                            WHEN estimated_pop_frequency > 0 THEN
-                                (%f * observed_sample_frequency) /
-                                NULLIF ((
-                                    %f * observed_sample_frequency + (1.0 - %f) * estimated_pop_frequency
-                                ), 0)
-                            ELSE 1.0
+                            WHEN p_sample_adjusted > 0 THEN
+                                (%f * p_sample_raw) /
+                                NULLIF(
+                                    %f * p_sample_raw + (1.0 - %f) * p_sample_adjusted,
+                                    0
+                                )
+                            ELSE %f
                         END AS posterior_in_dataset,
                         CASE
-                            WHEN estimated_pop_frequency > 0 THEN
-                                ABS(((%f * observed_sample_frequency) /
-                                NULLIF((%f * observed_sample_frequency + (1.0 - %f) * estimated_pop_frequency), 0)) - %f)
-                            ELSE ABS(1.0 - %f)
+                            WHEN p_sample_adjusted > 0 THEN
+                                ABS(
+                                    ((%f * p_sample_raw) /
+                                    NULLIF(
+                                        %f * p_sample_raw + (1.0 - %f) * p_sample_adjusted,
+                                        0
+                                    )) - %f
+                                )
+                            ELSE 0.0
                         END AS delta_presence
-                    FROM population_frequencies
+                    FROM eq_classes_with_smoothing
                 ),
                 risk_assessment AS (
                     SELECT
@@ -123,11 +143,9 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
         """, viewColumnString, viewName, sampleSizeLimit,
                 viewColumnString, viewColumnString,
                 addPrefixToColumns(columns, "eq"),
-                addPrefixToColumns(columns, "eq"),
-                samplingRate, samplingRate, samplingRate, samplingRate,
-                samplingRate, samplingRate, samplingRate, samplingRate,
-                samplingRate, samplingRate, samplingRate, samplingRate, samplingRate);
-
+                priorProbability,
+                priorProbability, priorProbability, priorProbability, priorProbability,
+                priorProbability, priorProbability, priorProbability, priorProbability);
 
 
 
@@ -147,9 +165,6 @@ public class DeltaPresenceCalculator implements PrivacyMetricCalculator<DeltaPre
                 ((Number) result[4]).longValue(),
                 ((Number) result[5]).longValue()
         );
-
-
-
     }
 
     private String addPrefixToColumns(List<String> columnList, String prefix) {

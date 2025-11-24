@@ -8,7 +8,7 @@ public class CreatePolicyDTO {
     private String policyName;
     private List<TableInfoDTO> tables;
     private List<ViewAttributeDTO> columns;
-    private Boolean isMaterializedView;
+    private Boolean useStaticMasking;
     private String userRole;
     private Boolean useDefaultMetrics;
     private Boolean evaluatePolicyUponCreation;
@@ -18,7 +18,7 @@ public class CreatePolicyDTO {
             String policyName,
             List<TableInfoDTO> tables,
             List<ViewAttributeDTO> columns,
-            Boolean isMaterializedView,
+            Boolean useStaticMasking,
             String userRole,
             Boolean useDefaultMetrics,
             Boolean evaluatePolicyUponCreation,
@@ -26,7 +26,7 @@ public class CreatePolicyDTO {
         this.policyName = policyName;
         this.tables = tables;
         this.columns = columns;
-        this.isMaterializedView = isMaterializedView;
+        this.useStaticMasking = useStaticMasking;
         this.userRole = userRole;
         this.useDefaultMetrics = useDefaultMetrics;
         this.evaluatePolicyUponCreation = evaluatePolicyUponCreation;
@@ -60,11 +60,11 @@ public class CreatePolicyDTO {
         this.columns = columns;
     }
 
-    public Boolean getIsMaterializedView() {
-        return isMaterializedView;
+    public Boolean getUseStaticMasking() {
+        return useStaticMasking;
     }
-    public void setIsMaterializedView(Boolean isMaterializedView) {
-        this.isMaterializedView = isMaterializedView;
+    public void setUseStaticMasking(Boolean useStaticMasking) {
+        this.useStaticMasking = useStaticMasking;
     }
 
     public String getUserRole() {
@@ -100,7 +100,7 @@ public class CreatePolicyDTO {
                 "policyName=" + policyName +
                 ", tables=" + tables +
                 ", columns=" + columns +
-                ", isMaterializedView=" + isMaterializedView +
+                ", useStaticMasking=" + useStaticMasking +
                 ", userRole=" + userRole + '}';
     }
 }

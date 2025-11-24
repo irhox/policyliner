@@ -20,8 +20,8 @@ public class PitmanEstimator {
 
         final double samplingRate = (double) sampleSize / populationSize;
 
-        long f1 = eqFrequencyMap.getOrDefault(1, 0L);  // singletons
-        long f2 = eqFrequencyMap.getOrDefault(2, 0L);  // doubletons
+        long f1 = eqFrequencyMap.getOrDefault(1, 0L);
+        long f2 = eqFrequencyMap.getOrDefault(2, 0L);
 
         double adjustmentFactor = f2 > 0 ? (2.0 * f2) / Math.max(1, f1) : 1.0;
 

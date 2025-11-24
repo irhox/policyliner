@@ -19,13 +19,13 @@
   },
   {"viewName": "patients_admissions_diagnosis_labs_policy",
     "columns": [
+      "patientdateofbirth",
+      "patientrace",
       "patientgender",
-      "labnames",
-      "admissions_admissionid",
-      "primarydiagnosiscode"
+      "patientmartialstatus"
     ],
     "sensitiveAttributes": [
-      "primarydiagnosisdescription"
+      "primarydiagnosiscode"
     ]
   },
   {"viewName": "patients_admissions_diagnosis_labs_policy790",
@@ -40,10 +40,14 @@
   },
   {"viewName": "patients_admissions_diagnosis_policy",
     "columns": [
-      "admissions_admissionid",
-      "primarydiagnosiscode"
+      "patientdateofbirth",
+      "patientrace",
+      "patientgender",
+      "patientmartialstatus"
     ],
-    "sensitiveAttributes": []
+    "sensitiveAttributes": [
+      "primarydiagnosiscode"
+    ]
   },
   {"viewName": "patients_admissions_diagnosis_policy556",
     "columns": [
