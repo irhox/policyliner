@@ -1,33 +1,40 @@
-1. Medical Staff Policy
+##########################################################################################################
+Disclosure Policies used in the Scenarios in section 5.2 in the Experiments' Chapter of my master thesis
+##########################################################################################################
+1. Enhanced Public Health Researcher Policy
 disclose
-    patients.patientid,
-    patientgender,
     patientdateofbirth,
-    admissions.admissionid,
+    patientrace,
+    patientmartialstatus,
+    patientgender,
+    patientpopulationpercentagebelowpoverty,
     admissionstartdate,
     admissionenddate,
     primarydiagnosiscode,
-    primarydiagnosisdescription,
-    labname,
-    labvalue,
-    labunits,
-    labdatetime
-    from patients, admissions, diagnosis, labs
+    from patients, admissions, diagnosis
+    with mask on patientdateofbirth using bucketize_age('5 years')
+    with mask on patientrace using randomized_response_patientrace()
+    with mask on patientmartialstatus using randomized_response_patientmaritalstatus()
     with mask on patientgender using randomized_response_patientgender()
-    with mask on to_date(to_char(patientdateofbirth, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('YEAR')
-    with mask on to_date(to_char(labdatetime, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('YEAR')
+    with mask on patientpopulationpercentagebelowpoverty using bucketize(5)
+    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
     with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     where patients.patientid = admissions.patientid
-    and admissions.admissionid = diagnosis.admissionid
-    and admissions.admissionid = labs.admissionid
-    and $user.role = 'medical_staff'
+    and admissions.patientid = diagnosis.patientid
+    and $user.role = 'public_health_researcher'
 
-2. Front Desk Staff
+
+
+#############################################################################################################
+Examples of other Disclosure Policies
+#############################################################################################################
+
+1. Front Desk Staff
 disclose
     patients.patientid,
     patientgender,
-    patientmaritalstatus,
+    patientmartialstatus,
     patientlanguage,
     admissions.admissionid,
     admissionstartdate,
@@ -36,58 +43,23 @@ disclose
     with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     with mask on patientgender using randomized_response_patientgender()
-    with mask on patientmaritalstatus using randomized_response_patientmaritalstatus()
+    with mask on patientmartialstatus using randomized_response_patientmaritalstatus()
     with mask on patientlanguage using randomized_response_patientlanguage()
     where patients.patientid = admissions.patientid
     and $user.role = 'front_desk_staff'
 
-3. Lab Technician
+2. Lab Technician
 disclose
-    patientid,
-    admissionid,
     labname,
     labvalue,
     labunits,
     labdatetime
     from labs
-    with mask on patientid using suppress()
     with mask on labname using generalize_labname()
     with mask on to_date(to_char(labdatetime, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     where $user.role = 'lab_technician'
 
-4. Public Health Researcher
-disclose
-    patients.patientid,
-    patientlanguage,
-    patientpopulationpercentagebelowpoverty,
-    admissions.admissionid,
-    primarydiagnosiscode
-    from patients, admissions, diagnosis
-    with mask on patients.patientid using suppress()
-    with mask on admissions.admissionid using suppress()
-    with mask on patientlanguage using randomized_response_patientlanguage()
-    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
-    where patients.patientid = admissions.patientid
-    and admissions.admissionid = diagnosis.admissionid
-    and $user.role = 'public_health_researcher'
-
-5. Audit Officer
-disclose
-    patients.patientid,
-    admissions.admissionid,
-    primarydiagnosiscode,
-    labname
-    from patients, admissions, diagnosis, labs
-    with mask on patients.patientid using generalize_primarydiagnosiscode()
-    with mask on admissions.admissionid using bucketize(10)
-    with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
-    with mask on labname using generalize_labname()
-    where patients.patientid = admissions.patientid
-    and admissions.admissionid = diagnosis.admissionid
-    and admissions.admissionid = labs.admissionid
-    and $user.role = 'audit_officer'
-
-6. Specialist Doctor
+3. Specialist Doctor
 disclose
     patients.patientid,
     admissions.admissionid,
@@ -97,30 +69,30 @@ disclose
     primarydiagnosisdescription
     from patients, admissions, diagnosis
     with mask on patients.patientid using generalize_primarydiagnosiscode()
-    with mask on admissions.admissionid using bucketize(10)
+    with mask on admissions.admissionid using bucketize(5)
     with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
     with mask on to_date(to_char(admissionstartdate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     with mask on to_date(to_char(admissionenddate, 'DD/MM/YYYY'), 'DD/MM/YYYY') using generalize_date('MONTH')
     where patients.patientid = admissions.patientid
-    and admissions.admissionid = diagnosis.admissionid
+    and admissions.patientid = diagnosis.patientid
     and $user.role = 'specialist_doctor'
 
-7. Patient Demographics
+4. Patient Demographics
 disclose
     patientid,
     patientgender,
     patientdateofbirth,
     patientrace,
-    patientmaritalstatus,
+    patientmartialstatus,
     patientlanguage
     from patients
     with mask on patientgender using randomized_response_patientgender()
-    with mask on patientmaritalstatus using randomized_response_patientmaritalstatus()
+    with mask on patientmartialstatus using randomized_response_patientmaritalstatus()
     with mask on patientlanguage using randomized_response_patientlanguage()
     with mask on patientrace using randomized_response_patientrace()
     where $user.role = 'patient_demographics'
 
-8. Diagnoses per Admission
+5. Diagnoses per Admission
 disclose
     admissions.admissionid,
     admissions.patientid,
@@ -129,5 +101,5 @@ disclose
     from admissions, diagnosis
     with mask on admissions.patientid using generalize_primarydiagnosiscode()
     with mask on primarydiagnosiscode using generalize_primarydiagnosiscode()
-    where admissions.admissionid = diagnosis.admissionid
+    where admissions.patientid = diagnosis.patientid
     and $user.role = 'diagnoses_per_admission'
