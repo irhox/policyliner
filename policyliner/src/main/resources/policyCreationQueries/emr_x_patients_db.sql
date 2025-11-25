@@ -50,7 +50,7 @@ CREATE VIEW patients_admissions_diagnosis_policy944 AS
         JOIN admissions ON admissions.patientid = patients.patientid
         JOIN diagnosis ON diagnosis.patientid = admissions.patientid;
 
--- 7. Patient Demographics
+-- 4. Patient Demographics
 CREATE VIEW patients_policy AS
     SELECT  randomized_response_patientgender(patientgender) AS patientgender,
             randomized_response_patientmaritalstatus(patientmartialstatus) AS patientmartialstatus,
@@ -60,7 +60,7 @@ CREATE VIEW patients_policy AS
             patientdateofbirth AS patientdateofbirth
     FROM patients;
 
--- 8. Diagnosis per Admission
+-- 5. Diagnosis per Admission
 CREATE VIEW admissions_diagnosis_policy AS
     SELECT  generalize_primarydiagnosiscode(admissions.patientid) AS admissions_patientid,
             generalize_primarydiagnosiscode(primarydiagnosiscode) AS primarydiagnosiscode,

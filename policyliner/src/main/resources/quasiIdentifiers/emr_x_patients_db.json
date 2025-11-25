@@ -1,4 +1,15 @@
 {"quasiIdentifiers": [
+  {"viewName": "patients_admissions_diagnosis_policy",
+    "columns": [
+      "patientdateofbirth",
+      "patientrace",
+      "patientgender",
+      "patientmartialstatus"
+    ],
+    "sensitiveAttributes": [
+      "primarydiagnosiscode"
+    ]
+  },
   {"viewName": "admissions_diagnosis_policy",
     "columns": [
       "admissions_admissionid",
@@ -38,17 +49,6 @@
       "labname"
     ]
   },
-  {"viewName": "patients_admissions_diagnosis_policy",
-    "columns": [
-      "patientdateofbirth",
-      "patientrace",
-      "patientgender",
-      "patientmartialstatus"
-    ],
-    "sensitiveAttributes": [
-      "primarydiagnosiscode"
-    ]
-  },
   {"viewName": "patients_admissions_diagnosis_policy556",
     "columns": [
       "admissions_admissionid",
@@ -66,21 +66,21 @@
       "to_date_to_char_admissionstartdate",
       "to_date_to_char_admissionenddate",
       "patientgender",
-      "patientmaritalstatus"
+      "patientmartialstatus"
     ],
     "sensitiveAttributes": [
-      "patientmaritalstatus"
+      "patientmartialstatus"
     ]
   },
   {"viewName": "patients_policy",
     "columns": [
       "patientgender",
-      "patientmaritalstatus",
+      "patientmartialstatus",
       "patientrace",
       "patientdateofbirth"
     ],
     "sensitiveAttributes": [
-      "patientmaritalstatus",
+      "patientmartialstatus",
       "patientrace"
     ]
   }

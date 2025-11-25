@@ -156,7 +156,7 @@ public class QueryService {
                 currentDisclosureQuery.alerts.add(newAlert);
                 prevDisclosureQuery.alerts.add(newAlert);
             } else if (totalCountSum - diffCountSum == 0) {
-                Log.info("Queries are totally different: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
+                Log.info("Queries of user " + currentDisclosureQuery.user.id + " are totally different: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
             } else {
                 double resultsRatio = (double) diffCountSum / totalCountSum;
                 Log.info("Results ratio: " + resultsRatio);
@@ -164,7 +164,7 @@ public class QueryService {
                     currentDisclosureQuery.status = QueryStatus.SUSPECT;
                     prevDisclosureQuery.status = QueryStatus.SUSPECT;
                     isApproved = false;
-                    Log.info("Queries are similar: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
+                    Log.info("Queries of user " + currentDisclosureQuery.user.id + " are similar: " + currentDisclosureQuery.query + " and " + prevDisclosureQuery.query);
 
                     Alert newAlert = new Alert();
                     newAlert.type = AlertType.OFFLINE_QUERY;
@@ -178,7 +178,7 @@ public class QueryService {
                 }
             }
         }
-        if (isApproved && wasSuspect) {
+        if (isApproved && wasSuspect && (i+1 < userQueries.size())) {
             Alert newAlert = new Alert();
             newAlert.message = """
                     Query (%s) of User (%s) was flagged as %s by the online query analysis.
@@ -267,6 +267,7 @@ public class QueryService {
                     }
                 });
                 Log.info("Found " + similarQueries.size() + " similar queries by user: " + disclosureQueryDTO.getUserId());
+                Log.info("Similar queries: " + similarQueries);
                 if (similarQueries.isEmpty()) {
                     Log.info("No similar queries found by user: " + disclosureQueryDTO.getUserId());
                     disclosureQuery.status = QueryStatus.APPROVED;
@@ -429,9 +430,36 @@ public class QueryService {
             String previousQueryWhereClause = previousQuery.substring(previousQuery.indexOf("WHERE")+5).trim();
             String currentQueryWhereClause = currentQuery.substring(currentQuery.indexOf("WHERE")+5).trim();
             if (!previousQueryWhereClause.equals(currentQueryWhereClause)) {
-                Set<String> previousWhereClauseSet = queryParserService.getWhereClauses(previousQuery);
-                Set<String> currentWhereClauseSet = queryParserService.getWhereClauses(currentQuery);
-                Set<String> differentWhereClauses = currentWhereClauseSet.stream().filter(c -> !previousWhereClauseSet.contains(c)).collect(Collectors.toSet());
+                Set<String> previousWhereClauseSet = queryParserService.getWhereClauses(previousQuery)
+                        .stream().map(p -> p.trim().replaceAll("[()]", "")).collect(Collectors.toSet());
+                Set<String> currentWhereClauseSet = queryParserService.getWhereClauses(currentQuery)
+                        .stream().map(p -> p.trim().replaceAll("[()]", "")).collect(Collectors.toSet());;
+                Set<String> differentWhereClauses = currentWhereClauseSet.stream().filter(c -> {
+                    Set<String> previousWhereClauseSetModified = previousWhereClauseSet.stream().map(p -> p.replaceAll("\\s+", "").replaceAll(";", "")).collect(Collectors.toSet());
+                    if (previousWhereClauseSetModified.contains(c.replaceAll("\\s+", "").replaceAll(";", ""))) return false;
+                    else {
+                        String[] whereParts;
+                        String whereClause = "";
+                        if (c.contains(">=")) {
+                            whereParts = c.replaceAll(";", "").split(">=");
+                            whereClause = whereParts[1] + "<=" + whereParts[0];
+                        } else if (c.contains("<=")) {
+                            whereParts = c.replaceAll(";", "").split("<=");
+                            whereClause = whereParts[1] + ">=" + whereParts[0];
+                        } else if (c.contains("=")) {
+                            whereParts = c.replaceAll(";", "").split("=");
+                            whereClause = whereParts[1] + "=" + whereParts[0];
+                        } else if (c.contains(">")) {
+                            whereParts = c.replaceAll(";", "").split(">");
+                            whereClause = whereParts[1] + "<" + whereParts[0];
+                        } else if (c.contains("<")) {
+                            whereParts = c.replaceAll(";", "").split("<");
+                            whereClause = whereParts[1] + ">" + whereParts[0];
+                        }
+
+                        return !previousWhereClauseSetModified.contains(whereClause.replaceAll("\\s+", ""));
+                    }
+                }).collect(Collectors.toSet());
                 if (!differentWhereClauses.isEmpty()) {
                     differentWhereClauseRatio = (double) differentWhereClauses.size() / currentWhereClauseSet.size();
                 }
