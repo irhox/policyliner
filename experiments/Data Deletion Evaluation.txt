@@ -1,0 +1,83 @@
+Data Deletion Evaluation:
+
+Admissions Stats: 361759 rows, first admission 1938, last admission 2017
+-------1.RUN---------------------------------
+Full Policy: 1540584
+estimatedPopulationUniquenessRatio= 0,000701
+TCLoseness = 0,0959
+DeltaPresence=0,0132
+sampleUniquenessRatio=0
+
+-------2.RUN---------------------------------
+DELETE Before 1950
+Admissions Stats: 355785 rows;; deleted 5974 rows
+Policy Size: 1513097
+Population Uniqueness Estimation=0,000714
+TCloseness=0,0738
+DeltaPresence=0,0172
+SampleUniquenessRatio=0
+
+-------3.RUN---------------------------------
+DELETE Before 1975
+Admissions Stats: 315700 rows;; deleted 40085 rows
+Policy Size: 1331473
+Population Uniqueness Estimation=0,000811
+TCloseness=0,0965
+DeltaPresence=0,0147
+SampleUniquenessRatio=0
+-------4.RUN---------------------------------
+DELETE Before 1985
+Admissions Stats: 281513 rows;; deleted 34187 rows
+Policy Size: 1180721
+Population Uniqueness Estimation=0,000915
+TCloseness=0,1009
+DeltaPresence=0,0208
+SampleUniquenessRatio=0
+-------5.RUN---------------------------------
+DELETE Before 1995
+Admissions Stats: 230149 rows;; deleted 51364 rows
+Policy Size: 955011
+Population Uniqueness Estimation=0,001131
+TCloseness=0,1236
+DeltaPresence=0,0156
+SampleUniquenessRatio=0
+-------6.RUN---------------------------------
+DELETE Before 2000 
+Admissions Stats: 195815 rows;; deleted 34334 rows
+Policy Size: 800523
+Population Uniqueness Estimation=0,001349
+TCloseness=0,1397
+DeltaPresence=0,0192
+SampleUniquenessRatio=0
+-------7.RUN---------------------------------
+DELETE Before 2005
+Admissions Stats: 146206 rows;; deleted 49609 rows
+Policy Size: 573904
+Population Uniqueness Estimation=0,001882
+TCloseness=0,0984
+DeltaPresence=0,0200
+SampleUniquenessRatio=0
+-------8.RUN---------------------------------
+DELETE Before 2010
+Admissions Stats: 60017 rows;; deleted 86189 rows
+Policy Size: 216695
+Population Uniqueness Estimation=0,004984
+TCloseness=0,2283
+DeltaPresence=0,0714
+SampleUniquenessRatio=0
+-------9.RUN---------------------------------
+DELETE Before 2012
+Admissions Stats: 20832 rows;; deleted 39185 rows
+Policy Size: 73626
+Population Uniqueness Estimation=0,014669
+TCloseness=0,3092
+DeltaPresence=0,4000
+SampleUniquenessRatio=0,000014, 1 unique row count
+-------10.RUN---------------------------------
+DELETE Before 2015
+Admissions Stats: 422 rows;; deleted 20410 rows
+Policy Size: 422
+Population Uniqueness Estimation=0,163507
+TCloseness=0,4866
+DeltaPresence=0,2368
+SampleUniquenessRatio=0,009479, 4 unique row count
