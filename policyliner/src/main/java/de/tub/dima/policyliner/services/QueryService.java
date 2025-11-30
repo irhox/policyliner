@@ -14,6 +14,11 @@ import jakarta.transaction.Transactional;
 import net.sf.jsqlparser.JSQLParserException;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,21 +55,48 @@ public class QueryService {
     @Scheduled(every = "{query.evaluation.interval}")
     @RunOnVirtualThread
     public void offlineQueryAnalysis() {
+//        the commented out lines in this method can be used to write the performance results to a csv file
+//        Map<String, Long> individualQueryDuration = new HashMap<>();
         Log.info("Offline Query Analysis started.");
         Instant start = Instant.now();
         List<User> users = userRepository.listAll();
         for (User user : users) {
             List<DisclosureQuery> userQueries = disclosureQueryRepository.findNewQueriesByUserId(user.id);
             for (int i = 0; i < userQueries.size(); i++) {
-                compareUserQueryResults(i, userQueries);
+                Long duration = compareUserQueryResults(i, userQueries);
+//                individualQueryDuration.put(user.id + "+" + i, duration);
             }
         }
         Instant end = Instant.now();
+
+//        writeMapToCsv(individualQueryDuration, "src/main/resources/offlineQueryAuditingEvaluation/yourFileHere.csv");
         Log.info("Offline Query Analysis finished in " + (end.toEpochMilli() - start.toEpochMilli()) + " ms.");
     }
 
+    public void writeMapToCsv(Map<String, Long> map, String filename) {
+        Path filePath = Paths.get(filename);
+
+        try (FileWriter writer = new FileWriter(filePath.toFile())) {
+            // Write header
+            writer.append("UserID+Query#,Duration in ms\n");
+
+            // Write data
+            for (Map.Entry<String, Long> entry : map.entrySet()) {
+                writer.append(entry.getKey())
+                        .append(',')
+                        .append(String.valueOf(entry.getValue()))
+                        .append('\n');
+            }
+
+            writer.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write CSV file", e);
+        }
+    }
+
     @Transactional(Transactional.TxType.REQUIRED)
-    public void compareUserQueryResults(int i, List<DisclosureQuery> userQueries) {
+    public Long compareUserQueryResults(int i, List<DisclosureQuery> userQueries) {
+        Instant start = Instant.now();
         DisclosureQuery currentDisclosureQuery = userQueries.get(i);
         boolean wasSuspect = currentDisclosureQuery.status == QueryStatus.SUSPECT || currentDisclosureQuery.status == QueryStatus.MODIFIED || currentDisclosureQuery.status == QueryStatus.DENIED;
         boolean isApproved = true;
@@ -192,6 +224,9 @@ public class QueryService {
         }
         currentDisclosureQuery.inspectionStatus = QueryInspectionStatus.INSPECTED;
         DisclosureQuery.getEntityManager().merge(currentDisclosureQuery);
+        Instant end = Instant.now();
+        Log.info("Query inspection " + i + " of user " + currentDisclosureQuery.user.id + " took " + Duration.between(start, end).toMillis() + " ms.");
+        return Duration.between(start, end).toMillis();
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -433,7 +468,7 @@ public class QueryService {
                 Set<String> previousWhereClauseSet = queryParserService.getWhereClauses(previousQuery)
                         .stream().map(p -> p.trim().replaceAll("[()]", "")).collect(Collectors.toSet());
                 Set<String> currentWhereClauseSet = queryParserService.getWhereClauses(currentQuery)
-                        .stream().map(p -> p.trim().replaceAll("[()]", "")).collect(Collectors.toSet());;
+                        .stream().map(p -> p.trim().replaceAll("[()]", "")).collect(Collectors.toSet());
                 Set<String> differentWhereClauses = currentWhereClauseSet.stream().filter(c -> {
                     Set<String> previousWhereClauseSetModified = previousWhereClauseSet.stream().map(p -> p.replaceAll("\\s+", "").replaceAll(";", "")).collect(Collectors.toSet());
                     if (previousWhereClauseSetModified.contains(c.replaceAll("\\s+", "").replaceAll(";", ""))) return false;

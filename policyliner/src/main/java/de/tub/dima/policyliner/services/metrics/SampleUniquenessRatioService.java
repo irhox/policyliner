@@ -89,7 +89,8 @@ public class SampleUniquenessRatioService implements PrivacyMetricService<Sample
 
     @Override
     public void evaluatePolicyAgainstMetric(Policy policy, JsonQuasiIdentifiers localQuasiIdentifiers) {
-        Log.info("Evaluating policy " + policy.id + " against uniqueness report");
+        String viewName = policy.viewName != null ? policy.viewName : policy.materializedViewName;
+        Log.info("Evaluating policy " + viewName + " against uniqueness report");
         List<PrivacyMetric> policyPrivacyMetrics = privacyMetricRepository.findByPolicyId(policy.getId());
         PrivacyMetric lowerUniquenessRatio = policyPrivacyMetrics.stream().
                 filter(p -> p.name.equals(PrivacyMetricName.UNIQUENESS_RATIO.getValue()) && p.metricSeverity.equals(MetricSeverity.LOWER_LIMIT))
@@ -103,7 +104,6 @@ public class SampleUniquenessRatioService implements PrivacyMetricService<Sample
         if (lowerUniquenessRatio == null && upperUniquenessRatio == null && middleUniquenessRatio == null) {
             Log.warn("No privacy metrics found for policy " + policy.id + ". Skipping uniqueness report evaluation.");
         } else {
-            String viewName = policy.viewName != null ? policy.viewName : policy.materializedViewName;
             Instant start = Instant.now();
             SampleUniquenessReport report;
             if (localQuasiIdentifiers == null) {
@@ -112,28 +112,31 @@ public class SampleUniquenessRatioService implements PrivacyMetricService<Sample
                 report = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
             }
             Instant end = Instant.now();
-
-            if (upperUniquenessRatio != null && report != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
+            if (report == null) {
+                Log.error("No sample uniqueness report found for view " + viewName);
+                return;
+            }
+            if (upperUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(upperUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.SEVERE;
                 newAlert.message = """ 
                         Policy with view %s has a high sample uniqueness ratio of %.6f.
-                        This is a cause for concern and should be reviewed. The view columns should most likely be generalized.
+                        This is a cause for concern and should be reviewed. This policy is very likely susceptible to Re-identification attacks.
                         """.formatted(viewName, report.getUniquenessRatio());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
-            } else if (middleUniquenessRatio != null && report != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(middleUniquenessRatio.value)) {
+            } else if (middleUniquenessRatio != null && report.getUniquenessRatio().doubleValue() > Double.parseDouble(middleUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
                 newAlert.message = """ 
                         Policy with view %s has a high sample uniqueness ratio of %.6f.
-                        Depending on the sensitivity of the data, this is a cause for concern and should be reviewed.
+                        Depending on the sensitivity of the data, this policy could be susceptible to Re-identification attacks.
                         """.formatted(viewName, report.getUniquenessRatio());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
-            } else if (lowerUniquenessRatio != null && report != null && report.getUniquenessRatio().doubleValue() < Double.parseDouble(lowerUniquenessRatio.value)) {
+            } else if (lowerUniquenessRatio != null && report.getUniquenessRatio().doubleValue() < Double.parseDouble(lowerUniquenessRatio.value)) {
                 Alert newAlert = new Alert();
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.INFO;
@@ -146,7 +149,7 @@ public class SampleUniquenessRatioService implements PrivacyMetricService<Sample
                 policy.alerts.add(newAlert);
             }
             Policy.getEntityManager().merge(policy);
-            Log.info("DONE Evaluating policy " + policy.id + " against uniqueness report in: " + (end.toEpochMilli() - start.toEpochMilli()) + " ms");
+            Log.info("DONE Evaluating policy " + viewName + " against uniqueness report in: " + (end.toEpochMilli() - start.toEpochMilli()) + " ms");
         }
     }
 

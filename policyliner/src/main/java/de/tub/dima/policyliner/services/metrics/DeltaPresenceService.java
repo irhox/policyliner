@@ -119,8 +119,8 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.SEVERE;
                 newAlert.message = """
-                        Policy with view %s has a high delta presence of %.3f.
-                        This is a cause for concern and should be reviewed. The view columns should most likely be generalized / masked better.
+                        Policy with view %s has a high delta presence of %.6f.
+                        This view is susceptible to Membership Disclosure Attacks and should be reviewed. The view columns should most likely be generalized / masked better.
                         """.formatted(report.getViewName(), report.getMaxDeltaPresence());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
@@ -129,8 +129,8 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.WARNING;
                 newAlert.message = """
-                        Policy with view %s has a delta presence of %.3f.
-                        Depending on the sensitivity of the data, this may be a cause for concern and should be reviewed.
+                        Policy with view %s has a delta presence of %.6f.
+                        Depending on the sensitivity of the data, this  view may be prone to Membership Disclosure Attacks and should be reviewed.
                 """.formatted(report.getViewName(), report.getMaxDeltaPresence());
                 newAlert.persist();
                 policy.alerts.add(newAlert);
@@ -139,7 +139,7 @@ public class DeltaPresenceService implements PrivacyMetricService<DeltaPresenceR
                 newAlert.type = AlertType.POLICY;
                 newAlert.severity = AlertSeverity.INFO;
                 newAlert.message = """
-                        Policy with view %s has a low delta presence of %.3f.
+                        Policy with view %s has a low delta presence of %.6f.
                         Please review the generalization / masking of the data in this view.
                         The usability of the data can most likely be improved.
                         """.formatted(report.getViewName(), report.getMaxDeltaPresence());

@@ -70,10 +70,14 @@ public class PolicyService {
     public void evaluateDisclosurePolicies() {
         List<Policy> activePolicies = policyRepository.findByStatus(PolicyStatus.ACTIVE).stream().toList();
         for (Policy currentPolicy : activePolicies) {
+            String viewName = currentPolicy.viewName != null ? currentPolicy.viewName : currentPolicy.materializedViewName;
+            Instant start = Instant.now();
             sampleUniquenessRatioService.evaluatePolicyAgainstMetric(currentPolicy, null);
             deltaPresenceService.evaluatePolicyAgainstMetric(currentPolicy, null);
             tclosenessService.evaluatePolicyAgainstMetric(currentPolicy, null);
             populationUniquenessEstimationService.evaluatePolicyAgainstMetric(currentPolicy, null);
+            Instant end = Instant.now();
+            Log.info("Finished evaluating policy " + viewName + " in " + (end.toEpochMilli() - start.toEpochMilli()) + " ms");
         }
     }
 

@@ -106,7 +106,6 @@ public class PopulationUniquenessEstimationService implements PrivacyMetricServi
             PopulationUniquenessReport report;
             if (localQuasiIdentifiers == null) {
                 report = computeMetricForTable(viewName, null);
-                System.out.println("report: " + report.toString());
             } else {
                 report = computeMetricForTable(viewName, localQuasiIdentifiers.getQuasiIdentifiers().getFirst());
             }

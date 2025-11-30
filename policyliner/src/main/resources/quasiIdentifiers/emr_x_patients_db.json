@@ -10,54 +10,32 @@
       "primarydiagnosiscode"
     ]
   },
-  {"viewName": "admissions_diagnosis_policy",
+  {"viewName": "patients_admissions_diagnosis_policy944",
     "columns": [
+      "patients_patientid",
       "admissions_admissionid",
-      "primarydiagnosiscode"
-    ],
-    "sensitiveAttributes": [
-      "primarydiagnosisdescription"
-    ]
-  },
-  {"viewName": "labs_policy",
-    "columns": [
-      "to_date_to_char_labdatetime",
-      "labname"
-    ],
-    "sensitiveAttributes": [
-      "labname"
-    ]
-  },
-  {"viewName": "patients_admissions_diagnosis_labs_policy",
-    "columns": [
-      "patientdateofbirth",
-      "patientrace",
-      "patientgender",
-      "patientmartialstatus"
-    ],
-    "sensitiveAttributes": [
-      "primarydiagnosiscode"
-    ]
-  },
-  {"viewName": "patients_admissions_diagnosis_labs_policy790",
-    "columns": [
-      "admissions_admissionid",
-      "primarydiagnosiscode",
-      "labname"
-    ],
-    "sensitiveAttributes": [
-      "labname"
-    ]
-  },
-  {"viewName": "patients_admissions_diagnosis_policy556",
-    "columns": [
-      "admissions_admissionid",
-      "primarydiagnosiscode",
       "to_date_to_char_admissionstartdate",
       "to_date_to_char_admissionenddate"
     ],
     "sensitiveAttributes": [
-      "primarydiagnosisdescription"
+      "primarydiagnosiscode"
+    ]
+  },
+  {"viewName": "admissions_diagnosis_policy",
+    "columns": [
+      "admissions_admissionid",
+      "admissions_patientid"
+    ],
+    "sensitiveAttributes": [
+      "primarydiagnosiscode"
+    ]
+  },
+  {"viewName": "labs_policy",
+    "columns": [
+      "to_date_to_char_labdatetime"
+    ],
+    "sensitiveAttributes": [
+      "labname"
     ]
   },
   {"viewName": "patients_admissions_policy",
@@ -69,7 +47,7 @@
       "patientmartialstatus"
     ],
     "sensitiveAttributes": [
-      "patientmartialstatus"
+      "patients_patientid"
     ]
   },
   {"viewName": "patients_policy",
@@ -80,8 +58,7 @@
       "patientdateofbirth"
     ],
     "sensitiveAttributes": [
-      "patientmartialstatus",
-      "patientrace"
+      "patientid"
     ]
   }
 ]
