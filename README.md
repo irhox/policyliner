@@ -19,3 +19,35 @@ privacy attacks, such as Membership Disclosure Attacks, Attribute Disclosure Att
 the needed tools and foresight to prevent these attacks on time and significantly
 strengthen the long-term robustness of sensitive database systems by ensuring that
 disclosure-compliant policies remain accurate and up-to-date.
+
+## Set-up
+PolicyLiner is prepared and tested to work with PostgreSQL. It should work with other types of relational databases, but this has not been tested yet.
+To evaluate PolicyLiner, we used the datasets by Kartoun et al. that can be found in the following links depending on the sizes [100-Patients](https://huggingface.co/datasets/kartoun/EMRBots_100_patients), [10000-Patients](https://huggingface.co/datasets/kartoun/EMRBots_10000_patients), [100000-Patients](https://huggingface.co/datasets/kartoun/EMRBots_100000_patients/tree/main). 
+
+To emulate our experiments, one needs to:
+1. Adapt one of these datasets into a PostgreSQL database
+2. Run the data masking functions from the Mascara repository and our repository defined in: <em>policyliner/src/main/resources/maskingFunctions</em>.
+3. Create the disclosure policies, defined in folder: <em>policyliner/src/main/resources/policyCreationQueries</em>.
+4. Add the following environment variables:
+   
+   DATA_DB_KIND=postgresql;
+   
+   DATA_DB_PASSWORD=
+
+   DATA_DB_URL=
+
+   DATA_DB_USER=
+
+   PL_DB_KIND=postgresql;
+
+   PL_DB_PASSWORD=
+
+   PL_DB_URL=
+
+   PL_DB_USER=
+   
+6. Install the Quarkus CLI using Chocolatey with: <em>choco install quarkus</em>.
+7. Run PolicyLiner backend command: <em>quarkus dev</em>
+8. Run PolicyLiner DemoUI: <em>npm install; npm start</em>
+
+For more detailed info check the [Master Thesis Paper](Abschlussarbeit_487673.pdf).
